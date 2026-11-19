@@ -1,6 +1,23 @@
 import { TrendingDown, TrendingUp, Clock, BarChart2 } from "lucide-react";
 
-export default function CardAtivo({ ativo }: { ativo: any }) {
+interface DadosAtivoBrapi {
+  symbol?: string;
+  longName?: string;
+  shortName?: string;
+  regularMarketChange?: number;
+  regularMarketChangePercent?: number;
+  regularMarketPrice?: number;
+  regularMarketVolume?: number;
+  regularMarketTime?: string;
+  currency?: string;
+  [key: string]: unknown;
+}
+
+interface AtivoProps extends DadosAtivoBrapi {
+  data?: DadosAtivoBrapi;
+}
+
+export default function CardAtivo({ ativo }: { ativo: AtivoProps }) {
   // 1. Garante que os dados sejam lidos quer venham dentro de "data" ou na raiz do objeto
   const info = ativo.data ? ativo.data : ativo;
   const symbol = ativo.symbol || info.symbol;
@@ -12,17 +29,17 @@ export default function CardAtivo({ ativo }: { ativo: any }) {
   const CorVariacao = isPositivo ? "text-emerald-500" : "text-red-500";
   const IconeVariacao = isPositivo ? TrendingUp : TrendingDown;
 
-  const formatarMoeda = (valor: number) => {
+  const formatarMoeda = (valor?: number) => {
     if (typeof valor !== 'number') return 'R$ 0,00';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: info.currency || 'BRL' }).format(valor);
   };
   
-  const formatarVolume = (valor: number) => {
+  const formatarVolume = (valor?: number) => {
     if (!valor) return '0';
     return new Intl.NumberFormat('pt-BR').format(valor);
   };
   
-  const formatarData = (dataIso: string) => {
+  const formatarData = (dataIso?: string) => {
     if (!dataIso) return '--:--';
     return new Intl.DateTimeFormat('pt-BR', {
       day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'

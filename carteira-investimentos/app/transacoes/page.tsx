@@ -12,7 +12,6 @@ import {
   ArrowUpDown,
   Wallet,
   TrendingUp,
-  TrendingDown,
   CircleDollarSign,
 } from 'lucide-react';
 
