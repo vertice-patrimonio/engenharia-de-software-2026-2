@@ -70,5 +70,10 @@ test.describe("Fluxo Completo E2E — Autenticação, Dashboard e Transações",
     // 5. Persistência após recarregar a página (F5)
     await page.reload();
     await expect(page.getByText("Exibindo 6 de 6 transações")).toBeVisible();
+
+    // 6. Perfil do Investidor
+    await page.goto("/perfil");
+    await expect(page).toHaveURL(/.*\/perfil/);
+    await expect(page.getByRole("heading", { name: /perfil/i })).toBeVisible();
   });
 });
