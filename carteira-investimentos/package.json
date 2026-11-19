@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
@@ -34,6 +36,7 @@
     "eslint-config-next": "^16.4.6",
     "jest": "^30.5.2",
     "jest-environment-jsdom": "^30.5.2",
+    "prettier": "^3.10.1",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5"

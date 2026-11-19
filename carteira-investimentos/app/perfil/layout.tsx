@@ -5,9 +5,5 @@ export default function PerfilLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <LayoutPrincipal paginaAtiva="perfil">
-      {children}
-    </LayoutPrincipal>
-  );
+  return <LayoutPrincipal paginaAtiva="perfil">{children}</LayoutPrincipal>;
 }
