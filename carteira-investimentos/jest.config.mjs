@@ -15,12 +15,24 @@ const customJestConfig = {
     '^@/(.*)$': '<rootDir>/$1',
   },
 
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/.next/',
+    '<rootDir>/e2e/',
+  ],
+
   coverageProvider: 'v8',
 
   collectCoverageFrom: [
     '**/*.{js,jsx,ts,tsx}',
     '!**/node_modules/**',
     '!**/.next/**',
+    '!**/coverage/**',
+    '!**/e2e/**',
+    '!playwright.config.ts',
+    '!jest.config.mjs',
+    '!jest.setup.js',
+    '!eslint.config.mjs',
   ],
 };
 
