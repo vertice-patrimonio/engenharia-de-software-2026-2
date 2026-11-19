@@ -20,7 +20,6 @@ export default function LayoutPrincipal({
 
   return (
     <div className="flex h-screen bg-slate-950 text-slate-200">
-
       {/* Barra lateral */}
       <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-6 hidden md:flex">
         <div>
@@ -56,9 +55,7 @@ export default function LayoutPrincipal({
       </aside>
 
       {/* Conteúdo da página */}
-      <main className="flex-1 overflow-y-auto p-8">
-        {children}
-      </main>
+      <main className="flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   );
 }
