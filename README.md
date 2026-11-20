@@ -49,5 +49,35 @@ O projeto também tem como finalidade aplicar, na prática, conceitos estudados 
 
 A hospedagem definitiva e os demais detalhes de infraestrutura ainda serão definidos pela equipe.
 
+## Como Executar o Projeto
+
+### Pré-requisitos
+- Node.js e npm instalados.
+
+### Instalação e execução
+
+Clone o repositório e acesse a pasta da aplicação:
+
+```bash
+git clone https://github.com/vertice-patrimonio/engenharia-de-software-2026-2.git
+cd engenharia-de-software-2026-2/carteira-investimentos
+```
+
+Instale as dependências:
+
+```bash
+npm install
+```
+
+Inicie o servidor de desenvolvimento:
+
+```bash
+npm run dev
+```
+
+A aplicação estará disponível em http://localhost:3000.
+
+**Observação:** a integração com o PostgreSQL ainda está em desenvolvimento. Para utilizar a consulta de cotações pela BRAPI, é necessário configurar a variável `BRAPI_KEY` conforme o arquivo `.env.example`.
+
 ## Status do Projeto
 O projeto encontra-se em fase de desenvolvimento e poderá receber novas funcionalidades, melhorias e alterações durante a disciplina.
