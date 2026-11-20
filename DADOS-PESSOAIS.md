@@ -15,15 +15,15 @@ Portanto, este documento diferencia os dados previstos daqueles efetivamente tra
 
 ## 3. Inventário de dados pessoais
 
-| Dado | Finalidade | Situação |
-|---|---|---|
-| Nome completo | Identificação do usuário | Previsto no cadastro |
-| E-mail | Identificação e autenticação | Previsto no cadastro |
-| CPF | Identificação adicional | Presente na interface; necessidade a confirmar |
-| Senha | Autenticação e proteção da conta | Implementação pendente |
-| Telefone | Informações de contato | Presente na interface de perfil |
-| Perfil de investidor | Identificar preferências e perfil de risco | Planejado |
-| Dados dos investimentos | Gerenciamento e acompanhamento da carteira | Planejado |
+| Dado | Finalidade | Quem acessa | Onde fica | Retenção | Situação |
+|---|---|---|---|---|---|
+| Nome completo | Identificar o usuário | Próprio usuário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Previsto no cadastro |
+| E-mail | Identificação e autenticação | Próprio usuário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Previsto no cadastro |
+| CPF | Identificação adicional, se necessária | Próprio usuário e backend autorizado | PostgreSQL, caso seja coletado | A definir pela equipe | Necessidade a confirmar |
+| Senha | Autenticação da conta | Serviço de autenticação; não deve ser exibida em texto puro | Hash seguro no PostgreSQL (previsto) | A definir pela equipe | Implementação pendente |
+| Telefone | Informações de contato | Próprio usuário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Presente na interface |
+| Perfil de investidor | Identificar preferências e perfil de risco | Próprio usuário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Planejado |
+| Dados dos investimentos | Gerenciar a carteira | Proprietário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Planejado |
 
 ## 4. Armazenamento e proteção
 
