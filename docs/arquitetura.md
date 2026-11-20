@@ -160,7 +160,7 @@ As validações do frontend terão finalidade de usabilidade. O backend será a 
   
 * Definir o mecanismo de autenticação, como sessão ou token JWT.  
 * Formalizar o contrato da API em `contrato/operacoes.md` e criar exemplos de requisições e respostas.  
-* Criar e revisar os diagramas Mermaid de arquitetura e implantação.  
+* Revisar os diagramas Mermaid de arquitetura e implantação após a definição da integração com o banco de dados e da hospedagem.  
 * Confirmar a estratégia de remoção de investimentos: o `PROJETO.md` prevê apagamento lógico, enquanto o critério CA-04.1 de `REQUISITOS.md` menciona exclusão definitiva. A equipe deverá resolver essa divergência antes de implementar a operação.  
 * Definir a estratégia de implantação e hospedagem.  
 * Manter a integração com cotações externas fora do caminho crítico do MVP.
@@ -168,5 +168,5 @@ As validações do frontend terão finalidade de usabilidade. O backend será a 
 ## **11\. Histórico de revisão**
 
 * 2026-10-19: elaboração da primeira proposta de arquitetura com base nos requisitos e no modelo de projeto existentes.
-* 2026-11-20: Correção dos links dos diagramas, atualização da decisão A-08 com Next.js e PostgreSQL e revisão dos pontos em aberto.
+* 2026-11-20: Correção dos links dos diagramas, atualização da decisão A-08 com Next.js e PostgreSQL e revisão dos pontos em aberto e ajuste dos pontos pendentes relacionados aos diagramas.
 
