@@ -18,6 +18,6 @@
 - Autor integra depois da aprovação e remove o ramo
 
 ## Divergência técnica
-- Discussão fica registrada no PR
-- Sem acordo em dois turnos de comentário, decide <nome>, e a decisão é
-  registrada no próprio PR 
+- As divergências técnicas serão discutidas entre os integrantes da equipe.
+- As opiniões dos membros serão consideradas para buscar uma decisão em conjunto.
+- A decisão tomada e sua justificativa serão registradas no Pull Request (PR).

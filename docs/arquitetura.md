@@ -10,7 +10,7 @@ A comunicação entre frontend e backend ocorrerá por meio de uma API REST, uti
 
 A primeira versão adotará uma arquitetura de monólito modular, com separação de responsabilidades entre os módulos, evitando a complexidade de manter serviços independentes durante o desenvolvimento do MVP.
 
-Diagrama principal: `diagramas/arquitetura.md`.
+Diagrama principal: [Arquitetura](../diagrams/arquitetura.mmd).
 
 ## **2\. Responsabilidades**
 
@@ -30,7 +30,7 @@ Durante o desenvolvimento, frontend, backend e banco de dados poderão executar 
 
 Na implantação, o navegador do usuário acessa o frontend, que fará requisições ao backend. O backend acessa o banco de dados por uma conexão própria.
 
-Diagrama de implantação: `diagramas/implantacao.md`.
+Diagrama de implantação: [Implantação](../diagrams/implantacao.mmd).
 
 A aplicação será implantada como uma unidade lógica, mantendo os módulos do backend organizados internamente. A hospedagem definitiva será definida posteriormente, conforme os requisitos de implantação da disciplina.
 
@@ -154,15 +154,13 @@ As validações do frontend terão finalidade de usabilidade. O backend será a 
 | A-05 | Calcular o valor total no backend | Centralizar o cálculo e evitar divergências entre telas | O cálculo será refeito após alterações nos investimentos | Aceita no PROJETO.md |
 | A-06 | Utilizar banco de dados relacional | Atender às relações entre usuários, perfis, carteiras e ativos | Será necessário definir o esquema e as restrições de integridade | Proposta |
 | A-07 | Permitir cadastro manual independentemente de cotações externas | Evitar que a indisponibilidade de serviços externos impeça o uso principal | Os valores exibidos dependerão dos dados cadastrados, não necessariamente de cotações atuais | Aceita no PROJETO.md |
-| A-08 | Definir a tecnologia do frontend, backend e banco | O grupo ainda não concluiu a seleção tecnológica | A implementação dependerá dessa decisão | Pendente |
+| A-08 | Adotar Next.js e PostgreSQL | A equipe escolheu Next.js para a aplicação web e PostgreSQL como banco de dados | A integração com o banco, os detalhes do backend e a hospedagem ainda precisam ser confirmados | Parcialmente definida |
 
 ## **10\. Pontos em aberto**
-
-* Definir as tecnologias e os frameworks de frontend e backend, considerando o conhecimento da equipe, os testes e a facilidade de implantação.  
-* Definir o sistema gerenciador de banco de dados relacional.  
+  
 * Definir o mecanismo de autenticação, como sessão ou token JWT.  
 * Formalizar o contrato da API em `contrato/operacoes.md` e criar exemplos de requisições e respostas.  
-* Criar e revisar os diagramas Mermaid de arquitetura e implantação.  
+* Revisar os diagramas Mermaid de arquitetura e implantação após a definição da integração com o banco de dados e da hospedagem.  
 * Confirmar a estratégia de remoção de investimentos: o `PROJETO.md` prevê apagamento lógico, enquanto o critério CA-04.1 de `REQUISITOS.md` menciona exclusão definitiva. A equipe deverá resolver essa divergência antes de implementar a operação.  
 * Definir a estratégia de implantação e hospedagem.  
 * Manter a integração com cotações externas fora do caminho crítico do MVP.
@@ -170,4 +168,5 @@ As validações do frontend terão finalidade de usabilidade. O backend será a 
 ## **11\. Histórico de revisão**
 
 * 2026-10-19: elaboração da primeira proposta de arquitetura com base nos requisitos e no modelo de projeto existentes.
+* 2026-11-20: Correção dos links dos diagramas, atualização da decisão A-08 com Next.js e PostgreSQL e revisão dos pontos em aberto e ajuste dos pontos pendentes relacionados aos diagramas.
 

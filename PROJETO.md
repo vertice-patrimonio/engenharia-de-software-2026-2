@@ -3,7 +3,7 @@
 # **Modelo de domínio**
 
 O diagrama de domínio detalha a estrutura conceitual do sistema e suas interações fundamentais.  
-Arquivo do diagrama: File (Localizado em diagrams/dominio.mmd).
+Arquivo do diagrama: [Modelo de domínio](diagrams/dominio.mmd).
 
 | Classe | Origem no REQUISITOS.md | Observação |
 | :---- | :---- | :---- |
@@ -14,7 +14,7 @@ Arquivo do diagrama: File (Localizado em diagrams/dominio.mmd).
 
 # **Modelo de dados**
 
-O modelo de dados reflete o domínio central da aplicação, focado nas entidades principais: Usuário (Investidor), Perfil do Investidor, Carteira de Investimento e Ativo (Investimento). Arquivo do diagrama: File (Localizado em `diagrams/dados.mmd`).
+O modelo de dados reflete o domínio central da aplicação, focado nas entidades principais: Usuário (Investidor), Perfil do Investidor, Carteira de Investimento e Ativo (Investimento). Arquivo do diagrama: [Modelo de dados](diagrams/dados.mmd).
 
 1. **Estratégia de identidade:** Utilizaremos chave artificial (como UUIDs ou IDs numéricos auto-incrementais) como chave primária para todas as entidades do sistema. Chaves naturais serão aplicadas estritamente como restrição de unicidade `unique`, como é o caso do e-mail de cadastro do usuário, garantindo que não existam contas duplicadas.  
 2. **Relacionamentos:** Um usuário possui um Perfil do Investidor e uma Carteira de Investimento. Uma Carteira pode conter múltiplos Ativos cadastrados.  
@@ -27,7 +27,7 @@ Os diagramas de comportamento mapeiam as interações do usuário com o sistema,
 
 ## **1\. Sequência de Cadastro de Investimento**
 
-Arquivo do diagrama: File (Localizado em `diagrams/sequencia-cadastrar-investimento.mmd`).
+Arquivo do diagrama: [Sequência de Cadastro de Investimento](diagrams/sequencia-cadastrar-investimento.mmd).
 
 * 1.1. Reflete o fluxo do UC-01.  
 * 1.2. O diagrama ilustra o caminho feliz (fluxo principal): o investidor informa os dados (ativo, tipo, quantidade, valor), o sistema valida as informações, associa o investimento à carteira e persiste os dados no banco, retornando a confirmação de sucesso.  
@@ -35,7 +35,7 @@ Arquivo do diagrama: File (Localizado em `diagrams/sequencia-cadastrar-investime
 
 ## **2\. Sequência de Visualização da Carteira**
 
-Arquivo do diagrama: File (Localizado em diagrams/sequencia-visualizar-carteira.mmd).
+Arquivo do diagrama: [Sequência de Visualização da Carteira](diagrams/sequencia-visualizar-carteira.mmd).
 
 * 2.1. Reflete o fluxo do UC-02.  
 * 2.2. O diagrama detalha como o sistema consulta o banco de dados para buscar os investimentos ativos do usuário, realiza o cálculo em memória do valor total investido (Patrimônio) e devolve as informações consolidadas para a interface.  
@@ -43,7 +43,7 @@ Arquivo do diagrama: File (Localizado em diagrams/sequencia-visualizar-carteira.
 
 ## **3\. Máquina de Estados do Ativo**
 
-Arquivo do diagrama: File (Localizado em `diagrams/estados-investimento.mmd`).
+Arquivo do diagrama: [Máquina de Estados do Ativo](diagrams/estados-investimento.mmd).
 
 * 3.1. Mapeia o ciclo de vida de um ativo dentro do sistema: desde o momento em que é Cadastrado (ativo na carteira), passando por possíveis atualizações (Editado), até o momento em que o usuário decide excluí-lo, mudando seu estado para Removido/Inativo (refletindo a regra de apagamento lógico).
 
@@ -67,13 +67,14 @@ Arquivo do diagrama: File (Localizado em `diagrams/estados-investimento.mmd`).
 # **Protótipo**
 
 Telas do fluxo principal e as recusas previstas podem ser consultadas em:  
-Pasta do protótipo: File (Localizado em prototipo/).
+Pasta do protótipo: [Visualizar protótipos](prototipo/).
 
 # **Conferência cruzada**
 
 * **2026-09-15:** Conduzido pela equipe de desenvolvimento. Verificada a consistência entre a Descoberta, Requisitos e Projeto. Corrigidas as decisões de projeto divergentes (removidos resquícios sobre prazos e supervisores), incluída a entidade Perfil do Investidor no modelo de domínio/dados e alinhada a estratégia de resiliência para a API externa de cotações.
 
-# **Histórico de revisão** 
+# **Histórico de revisão**
 
 * 2026-09-21: Correção e alinhamento de coerência entre Descoberta, Requisitos e Projeto.
+* 2026-11-20: Correção dos caminhos e inclusão de links para os diagramas de domínio, dados e comportamento, além do protótipo do sistema.
 
