@@ -40,7 +40,14 @@ O projeto também tem como finalidade aplicar, na prática, conceitos estudados 
     - Visualizar valorização ou desvalorização dos ativos.
 
 ## Tecnologias Utilizadas
-A definir pelo grupo.
+
+- **Next.js:** framework utilizado no desenvolvimento da aplicação web.
+- **React:** biblioteca utilizada para construção da interface.
+- **TypeScript:** linguagem utilizada no desenvolvimento da aplicação.
+- **Tailwind CSS:** estilização da interface.
+- **PostgreSQL:** banco de dados relacional escolhido para persistência dos dados, com integração em desenvolvimento.
+
+A hospedagem definitiva e os demais detalhes de infraestrutura ainda serão definidos pela equipe.
 
 ## Status do Projeto
 O projeto encontra-se em fase de desenvolvimento e poderá receber novas funcionalidades, melhorias e alterações durante a disciplina.
