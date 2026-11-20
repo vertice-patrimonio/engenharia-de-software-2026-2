@@ -204,5 +204,21 @@ A1 — Operação cancelada: o usuário cancela a confirmação e o investimento
 ### V1 — 2026-09-01, com aluno em estágio (perfil de E3)  
 | Achado | Efeito | Item alterado |
 
+## Questões pendentes de privacidade — Capítulo 13
+
+As seguintes questões precisam ser avaliadas pela equipe durante o desenvolvimento do sistema:
+
+- [ ] Confirmar se o CPF é realmente necessário para o cadastro de usuários.
+- [ ] Definir quais dados pessoais serão obrigatórios e quais serão opcionais.
+- [ ] Definir o período de retenção dos dados pessoais.
+- [ ] Estabelecer um procedimento para exclusão de contas e dados pessoais.
+- [ ] Validar as regras de acesso às informações privadas dos usuários.
+- [ ] Revisar as informações de segurança e privacidade apresentadas nas interfaces.
+
+Essas questões estão relacionadas ao inventário documentado no arquivo `DADOS-PESSOAIS.md`.
+
+As decisões serão registradas conforme a evolução do projeto.
+
 ## Histórico de revisão  
-- 2026-09-14: linha de base do marco 1 
+- 2026-09-14: linha de base do marco 1
+- 2026-11-18: inclusão das questões pendentes de privacidade referentes ao Capítulo 13.

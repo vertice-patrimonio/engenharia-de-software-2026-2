@@ -79,6 +79,30 @@ Os códigos HTTP previstos incluem:
 
 Os endpoints de carteira e investimentos deverão retornar apenas informações pertencentes ao usuário autenticado.
 
+### 5.1. Política de controle de acesso
+
+O sistema Carteira de Investimentos adotará uma política de acesso baseada na autenticação do usuário e na propriedade dos recursos.
+
+| Recurso | Permissão prevista |
+|---|---|
+| Cadastro e login | Acesso público |
+| Perfil do investidor | Somente o próprio usuário autenticado |
+| Carteira de investimentos | Somente o proprietário autenticado |
+| Consulta de ativos | Somente o proprietário da carteira |
+| Cadastro, edição e remoção de ativos | Somente o proprietário da carteira |
+
+A autorização deverá ser verificada pelo backend, independentemente das restrições apresentadas no frontend.
+
+As respostas previstas são:
+
+- 401 Unauthorized: usuário não autenticado.
+- 403 Forbidden: usuário autenticado sem permissão para executar a operação.
+- 404 Not Found: recurso inexistente ou cuja existência não deve ser revelada ao usuário.
+
+A equipe deverá implementar e testar essas regras após a integração da autenticação e da persistência.
+
+**Situação atual:** política documentada, implementação e testes de autorização pendentes.
+
 ## **6\. Fluxo principal da aplicação**
 
 O fluxo de visualização da carteira ocorrerá da seguinte maneira:
