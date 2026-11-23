@@ -1,7 +1,46 @@
+"use client";
+
+import { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Key, EyeOff, ShieldCheck } from "lucide-react";
+import { Mail, Key, Eye, EyeOff, ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErro("");
+    setCarregando(true);
+
+    try {
+      const resposta = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha }),
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        setErro(dados.erro || "Erro ao realizar login.");
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setErro("Erro de conexão com o servidor.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-200 font-sans">
       {/* Lado Esquerdo - Banner */}
@@ -37,7 +76,13 @@ export default function LoginPage() {
             Insira suas credenciais para gerenciar seus investimentos.
           </p>
 
-          <form className="space-y-4" action="/dashboard">
+          {erro && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {erro}
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {/* Campo E-mail */}
             <div className="relative">
               <Mail
@@ -46,7 +91,9 @@ export default function LoginPage() {
               />
               <input
                 type="email"
-                placeholder="guilherme@exemplo.com.br"
+                placeholder="seuemail@exemplo.com.br"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-4 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                 required
               />
@@ -59,28 +106,28 @@ export default function LoginPage() {
                 size={20}
               />
               <input
-                type="password"
+                type={mostrarSenha ? "text" : "password"}
                 placeholder="••••••••••••"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-4 pl-12 pr-12 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
                 required
               />
               <button
                 type="button"
+                onClick={() => setMostrarSenha(!mostrarSenha)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
               >
-                <EyeOff size={20} />
+                {mostrarSenha ? <Eye size={20} /> : <EyeOff size={20} />}
               </button>
             </div>
 
-            <p className="text-xs text-center text-emerald-500 font-semibold mt-4 mb-2 tracking-widest">
-              SIMULAR RESPOSTA DO SISTEMA:
-            </p>
-
             <button
               type="submit"
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-lg py-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+              disabled={carregando}
+              className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-bold text-lg py-4 rounded-lg flex items-center justify-center gap-2 transition-colors mt-6 cursor-pointer"
             >
-              Entrar <span>→</span>
+              {carregando ? "Entrando..." : "Entrar"} <span>→</span>
             </button>
           </form>
 
