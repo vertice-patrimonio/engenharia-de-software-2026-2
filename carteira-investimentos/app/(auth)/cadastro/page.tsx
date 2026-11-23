@@ -1,7 +1,56 @@
+"use client";
+
+import { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Key, EyeOff, ShieldCheck, User, FileText } from "lucide-react";
+import {
+  Mail,
+  Key,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  User,
+  FileText,
+} from "lucide-react";
 
 export default function CadastroPage() {
+  const router = useRouter();
+  const [nome, setNome] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setErro("");
+    setCarregando(true);
+
+    try {
+      const resposta = await fetch("/api/auth/cadastro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, email, senha }),
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        setErro(dados.erro || "Erro ao realizar cadastro.");
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setErro("Erro de conexão com o servidor.");
+    } finally {
+      setCarregando(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-200 font-sans">
       {/* Lado Esquerdo - Reutilizado do Login */}
@@ -33,7 +82,13 @@ export default function CadastroPage() {
             Preencha seus dados para iniciar a consolidação do seu patrimônio.
           </p>
 
-          <form className="space-y-4" action="/login">
+          {erro && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {erro}
+            </div>
+          )}
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="relative">
               <User
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
@@ -42,6 +97,8 @@ export default function CadastroPage() {
               <input
                 type="text"
                 placeholder="Nome Completo"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 pl-12 pr-4 text-white focus:border-emerald-500 outline-none"
                 required
               />
@@ -55,6 +112,8 @@ export default function CadastroPage() {
               <input
                 type="text"
                 placeholder="CPF"
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 pl-12 pr-4 text-white focus:border-emerald-500 outline-none"
                 required
               />
@@ -68,6 +127,8 @@ export default function CadastroPage() {
               <input
                 type="email"
                 placeholder="E-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 pl-12 pr-4 text-white focus:border-emerald-500 outline-none"
                 required
               />
@@ -79,22 +140,29 @@ export default function CadastroPage() {
                 size={20}
               />
               <input
-                type="password"
-                placeholder="Crie uma Senha"
+                type={mostrarSenha ? "text" : "password"}
+                placeholder="Crie uma Senha (mín. 8 caracteres)"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                minLength={8}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 pl-12 pr-12 text-white focus:border-emerald-500 outline-none"
                 required
               />
-              <EyeOff
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500"
-                size={20}
-              />
+              <button
+                type="button"
+                onClick={() => setMostrarSenha(!mostrarSenha)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              >
+                {mostrarSenha ? <Eye size={20} /> : <EyeOff size={20} />}
+              </button>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-lg py-4 rounded-lg flex items-center justify-center gap-2 mt-6"
+              disabled={carregando}
+              className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-slate-950 font-bold text-lg py-4 rounded-lg flex items-center justify-center gap-2 mt-6 cursor-pointer"
             >
-              Cadastrar <span>→</span>
+              {carregando ? "Cadastrando..." : "Cadastrar"} <span>→</span>
             </button>
           </form>
 
