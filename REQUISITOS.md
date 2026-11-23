@@ -204,21 +204,36 @@ A1 — Operação cancelada: o usuário cancela a confirmação e o investimento
 ### V1 — 2026-09-01, com aluno em estágio (perfil de E3)  
 | Achado | Efeito | Item alterado |
 
+
 ## Questões pendentes de privacidade — Capítulo 13
 
-As seguintes questões precisam ser avaliadas pela equipe durante o desenvolvimento do sistema:
+As seguintes questões permanecem pendentes de definição, integração ou validação pela equipe:
 
-- [ ] Confirmar se o CPF é realmente necessário para o cadastro de usuários.
-- [ ] Definir quais dados pessoais serão obrigatórios e quais serão opcionais.
-- [ ] Definir o período de retenção dos dados pessoais.
+- [ ] Definir os períodos de retenção dos dados pessoais.
 - [ ] Estabelecer um procedimento para exclusão de contas e dados pessoais.
-- [ ] Validar as regras de acesso às informações privadas dos usuários.
-- [ ] Revisar as informações de segurança e privacidade apresentadas nas interfaces.
+- [ ] Validar os controles de autenticação e autorização implementados no backend.
+- [ ] Confirmar a integração das interfaces de cadastro e login com as respectivas APIs.
+- [ ] Revisar as informações de segurança e privacidade apresentadas nas interfaces, incluindo a retirada do campo CPF.
+- [ ] Revisar a exposição de informações técnicas pela rota de diagnóstico do banco de dados antes da implantação.
 
-Essas questões estão relacionadas ao inventário documentado no arquivo `DADOS-PESSOAIS.md`.
+### Situação atual
 
-As decisões serão registradas conforme a evolução do projeto.
+O backend possui implementação inicial de cadastro e autenticação de usuários, utilizando nome, e-mail e senha como informações obrigatórias.
 
-## Histórico de revisão  
-- 2026-09-14: linha de base do marco 1
+As senhas são protegidas por hash Argon2id, e a autenticação utiliza sessões JWT armazenadas em cookies HTTP-only.
+
+O PostgreSQL possui estrutura para armazenamento de usuários, carteiras, investimentos e operações.
+
+Entretanto, a integração das interfaces com as APIs e a validação dos controles de acesso ainda precisam ser concluídas.
+
+O CPF não faz parte do cadastro implementado no backend nem do esquema do banco de dados, mas ainda aparece nas interfaces, necessitando de ajuste pela equipe responsável.
+
+O inventário dos dados pessoais e os mecanismos de proteção estão documentados no arquivo `DADOS-PESSOAIS.md`.
+
+As decisões pendentes serão registradas conforme a evolução do projeto.
+
+## Histórico de revisão
+
+- 2026-09-14: linha de base do marco 1.
 - 2026-11-18: inclusão das questões pendentes de privacidade referentes ao Capítulo 13.
+- 2026-11-23: atualização das questões de privacidade conforme a implementação inicial do backend e PostgreSQL.
