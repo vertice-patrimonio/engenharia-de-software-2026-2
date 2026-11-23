@@ -7,11 +7,14 @@ Este documento apresenta o inventário dos dados pessoais previstos para o siste
 
 O objetivo é identificar os dados utilizados, suas finalidades, formas de armazenamento, permissões de acesso e questões pendentes relacionadas à privacidade e à proteção de dados.
 
+
 ## 2. Situação atual
 
-O sistema encontra-se em desenvolvimento. As interfaces de cadastro, login e perfil já foram criadas, mas a autenticação e a persistência dos dados pessoais ainda não estão totalmente integradas na versão principal do projeto.
+O sistema encontra-se em desenvolvimento. As interfaces de cadastro, login e perfil já foram criadas.
 
-Portanto, este documento diferencia os dados previstos daqueles efetivamente tratados pelo sistema.
+O backend possui implementação inicial de autenticação, com senhas protegidas por hash Argon2id e sessões JWT. Também foram adicionadas a integração com PostgreSQL e as consultas para persistência dos dados.
+
+Essas funcionalidades ainda precisam ser validadas por testes de integração, autenticação e controle de acesso.
 
 ## 3. Inventário de dados pessoais
 
