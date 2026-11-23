@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Fluxo Completo E2E — Autenticação, Dashboard e Transações", () => {
-  test("deve cadastrar, logar, validar o dashboard e filtrar movimentações em /transacoes", async ({
+  test("deve cadastrar, logar, registrar transação no banco e validar persistência", async ({
     page,
   }) => {
     const emailUnico = `usuario_${Date.now()}@teste.com`;
@@ -35,43 +35,43 @@ test.describe("Fluxo Completo E2E — Autenticação, Dashboard e Transações",
     await page.getByPlaceholder("Crie uma Senha").fill("SenhaTeste@123");
     await page.getByRole("button", { name: /cadastrar/i }).click();
 
-    // 2. Login
-    await expect(page).toHaveURL(/\/login/);
+    // 2. Dashboard Consolidado + Card de Cotação ao Vivo
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByText("Patrimônio Total Consolidado")).toBeVisible();
+    await expect(page.getByText("Investidor E2E")).toBeVisible();
+    await expect(page.getByText(/R\$\s?38,50/)).toBeVisible();
+
+    // 3. Logout / Login com o usuário recém-criado no banco
+    await page.goto("/login");
     await page.getByPlaceholder("guilherme@exemplo.com.br").fill(emailUnico);
     await page.getByPlaceholder("••••••••••••").fill("SenhaTeste@123");
     await page.getByRole("button", { name: /entrar/i }).click();
-
-    // 3. Dashboard Consolidado + Card de Cotação ao Vivo
     await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByText("Patrimônio Total Consolidado")).toBeVisible();
-    await expect(page.getByText("PETR4 - Petrobras PN")).toBeVisible();
-    await expect(page.getByText("R$ 10.000,00")).toBeVisible();
-    await expect(page.getByText(/R\$\s?38,50/)).toBeVisible();
 
-    // 4. Histórico e Filtros em /transacoes
+    // 4. Registrar operação real em /transacoes e validar persistência
     await page.goto("/transacoes");
     await expect(
       page.getByRole("heading", { name: "Transações" }),
     ).toBeVisible();
     await expect(page.getByText("Total movimentado")).toBeVisible();
-    await expect(page.getByText("Exibindo 6 de 6 transações")).toBeVisible();
+    await expect(page.getByText("Exibindo 0 de 0 transações")).toBeVisible();
 
-    // Filtrar por texto ("WEGE3")
-    await page.getByPlaceholder("Buscar ativo...").fill("WEGE3");
-    await expect(page.getByText("WEG ON")).toBeVisible();
-    await expect(page.getByText("Exibindo 1 de 6 transações")).toBeVisible();
+    await page.getByRole("button", { name: /nova transação/i }).click();
+    await page.getByPlaceholder("Ex: 10").fill("2");
+    await page.getByPlaceholder("Ex: 35.50").fill("50");
+    await page.getByRole("button", { name: /^registrar$/i }).click();
 
-    // Limpar busca e filtrar por tipo ("Dividendo")
-    await page.getByPlaceholder("Buscar ativo...").fill("");
-    await page.getByRole("combobox").selectOption("Dividendo");
-    await expect(page.getByText("BBAS3")).toBeVisible();
-    await expect(page.getByText("Exibindo 1 de 6 transações")).toBeVisible();
+    await expect(page.getByText("Exibindo 1 de 1 transações")).toBeVisible();
 
     // 5. Persistência após recarregar a página (F5)
     await page.reload();
-    await expect(page.getByText("Exibindo 6 de 6 transações")).toBeVisible();
+    await expect(page.getByText("Exibindo 1 de 1 transações")).toBeVisible();
 
-    // 6. Perfil do Investidor
+    // 6. Validar saldo atualizado no Dashboard
+    await page.goto("/dashboard");
+    await expect(page.getByText(/R\$\s?100,00/).first()).toBeVisible();
+
+    // 7. Perfil do Investidor
     await page.goto("/perfil");
     await expect(page).toHaveURL(/.*\/perfil/);
     await expect(page.getByRole("heading", { name: /perfil/i })).toBeVisible();
