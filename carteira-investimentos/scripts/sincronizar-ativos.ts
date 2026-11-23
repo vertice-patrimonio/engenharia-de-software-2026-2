@@ -1,4 +1,3 @@
-
 import { loadEnvConfig } from "@next/env";
 
 loadEnvConfig(process.cwd());
@@ -6,119 +5,103 @@ loadEnvConfig(process.cwd());
 import { Pool } from "pg";
 
 interface AtivoBrapi {
-    stock: string;
-    name: string;
-    type?: string;
-    subType?: string;
-    sector?: string;
-    logo?: string;
+  stock: string;
+  name: string;
+  type?: string;
+  subType?: string;
+  sector?: string;
+  logo?: string;
 }
 
 interface RespostaBrapi {
-    stocks: AtivoBrapi[];
-    currentPage?: number;
-    totalPages?: number;
-    hasNextPage?: boolean;
+  stocks: AtivoBrapi[];
+  currentPage?: number;
+  totalPages?: number;
+  hasNextPage?: boolean;
 }
 
 function converterTipo(
-    subTipo: string | undefined
+  subTipo: string | undefined,
 ): "ACAO" | "FII" | "ETF" | "BDR" | "OUTRO" {
+  switch (subTipo?.toLowerCase()) {
+    case "stock":
+    case "unit":
+      return "ACAO";
 
-    switch (subTipo?.toLowerCase()) {
-        case "stock":
-        case "unit":
-            return "ACAO";
+    case "fii":
+      return "FII";
 
-        case "fii":
-            return "FII";
+    case "etf":
+      return "ETF";
 
-        case "etf":
-            return "ETF";
+    case "bdr":
+      return "BDR";
 
-        case "bdr":
-            return "BDR";
-
-        default:
-            return "OUTRO";
-    }
+    default:
+      return "OUTRO";
+  }
 }
 
-async function buscarPagina(
-    pagina: number
-): Promise<RespostaBrapi> {
+async function buscarPagina(pagina: number): Promise<RespostaBrapi> {
+  const url = new URL("https://brapi.dev/api/quote/list");
 
-    const url = new URL(
-        "https://brapi.dev/api/quote/list"
-    );
+  url.searchParams.set("limit", "2000");
+  url.searchParams.set("page", String(pagina));
 
-    url.searchParams.set("limit", "2000");
-    url.searchParams.set("page", String(pagina));
+  const resposta = await fetch(url.toString(), {
+    signal: AbortSignal.timeout(20000),
+  });
 
-    const resposta = await fetch(url.toString(), {
-        signal: AbortSignal.timeout(20000),
-    });
+  if (!resposta.ok) {
+    throw new Error(`Erro ao consultar a brapi: HTTP ${resposta.status}`);
+  }
 
-    if (!resposta.ok) {
-        throw new Error(
-            `Erro ao consultar a brapi: HTTP ${resposta.status}`
-        );
-    }
-
-    return await resposta.json();
+  return await resposta.json();
 }
 
 async function sincronizar() {
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL não configurada.");
+  }
 
-    if (!process.env.DATABASE_URL) {
-        throw new Error(
-            "DATABASE_URL não configurada."
-        );
-    }
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+  });
 
-    const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-    });
+  const client = await pool.connect();
 
-    const client = await pool.connect();
+  let totalProcessado = 0;
 
-    let totalProcessado = 0;
+  try {
+    console.log("Iniciando sincronização de ativos...");
 
-    try {
+    await client.query("BEGIN");
 
-        console.log("Iniciando sincronização de ativos...");
+    let pagina = 1;
+    let continuar = true;
 
-        await client.query("BEGIN");
+    while (continuar) {
+      console.log(`Consultando página ${pagina}...`);
 
-        let pagina = 1;
-        let continuar = true;
+      const dados = await buscarPagina(pagina);
 
-        while (continuar) {
+      const ativos = dados.stocks ?? [];
 
-            console.log(`Consultando página ${pagina}...`);
+      for (const ativo of ativos) {
+        if (!ativo.stock || !ativo.name) {
+          continue;
+        }
 
-            const dados = await buscarPagina(pagina);
+        const ticker = ativo.stock.trim().toUpperCase();
 
-            const ativos = dados.stocks ?? [];
+        const nome = ativo.name.trim();
 
-            for (const ativo of ativos) {
+        if (!ticker || !nome) {
+          continue;
+        }
 
-                if (!ativo.stock || !ativo.name) {
-                    continue;
-                }
-
-                const ticker = ativo.stock
-                    .trim()
-                    .toUpperCase();
-
-                const nome = ativo.name.trim();
-
-                if (!ticker || !nome) {
-                    continue;
-                }
-
-                await client.query(
-                    `INSERT INTO ativos (
+        await client.query(
+          `INSERT INTO ativos (
                         ticker,
                         nome,
                         tipo_ativo,
@@ -140,60 +123,51 @@ async function sincronizar() {
                         logo_url = EXCLUDED.logo_url,
                         ativo_no_mercado = TRUE,
                         atualizado_em = NOW()`,
-                    [
-                        ticker,
-                        nome,
-                        converterTipo(ativo.subType),
-                        ativo.sector ?? null,
-                        "B3",
-                        ativo.logo ?? null,
-                    ]
-                );
-
-                totalProcessado++;
-            }
-
-            continuar =
-                dados.hasNextPage === true &&
-                dados.totalPages !== undefined &&
-                pagina < dados.totalPages;
-
-            pagina++;
-
-            if (pagina > 100) {
-                throw new Error(
-                    "Limite de páginas excedido."
-                );
-            }
-        }
-
-        await client.query("COMMIT");
-
-        console.log("--------------------------------");
-        console.log("Sincronização concluída!");
-        console.log(`Ativos processados: ${totalProcessado}`);
-        console.log("--------------------------------");
-
-    } catch (erro) {
-
-        await client.query("ROLLBACK");
-
-        console.error(
-            "Erro na sincronização:",
-            erro
+          [
+            ticker,
+            nome,
+            converterTipo(ativo.subType),
+            ativo.sector ?? null,
+            "B3",
+            ativo.logo ?? null,
+          ],
         );
 
-        process.exitCode = 1;
+        totalProcessado++;
+      }
 
-    } finally {
+      continuar =
+        dados.hasNextPage === true &&
+        dados.totalPages !== undefined &&
+        pagina < dados.totalPages;
 
-        client.release();
+      pagina++;
 
-        await pool.end();
+      if (pagina > 100) {
+        throw new Error("Limite de páginas excedido.");
+      }
     }
+
+    await client.query("COMMIT");
+
+    console.log("--------------------------------");
+    console.log("Sincronização concluída!");
+    console.log(`Ativos processados: ${totalProcessado}`);
+    console.log("--------------------------------");
+  } catch (erro) {
+    await client.query("ROLLBACK");
+
+    console.error("Erro na sincronização:", erro);
+
+    process.exitCode = 1;
+  } finally {
+    client.release();
+
+    await pool.end();
+  }
 }
 
 sincronizar().catch((erro) => {
-    console.error(erro);
-    process.exitCode = 1;
+  console.error(erro);
+  process.exitCode = 1;
 });

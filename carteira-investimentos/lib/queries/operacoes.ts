@@ -1,55 +1,50 @@
-
 import { pool } from "@/lib/db";
 import { NovaOperacao, Operacao } from "@/lib/tipos";
 
 export async function registrarOperacao(
-    carteiraId: string,
-    operacao: NovaOperacao
+  carteiraId: string,
+  operacao: NovaOperacao,
 ): Promise<Operacao> {
+  const {
+    ativoId,
+    tipo,
+    quantidade,
+    precoUnitario,
+    taxas = 0,
+    dataOperacao,
+  } = operacao;
 
-    const {
-        ativoId,
-        tipo,
-        quantidade,
-        precoUnitario,
-        taxas = 0,
-        dataOperacao
-    } = operacao;
+  const client = await pool.connect();
 
-    const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-    try {
-        await client.query("BEGIN");
-
-        // Verifica se o ativo existe.
-        const ativo = await client.query(
-            `SELECT id
+    // Verifica se o ativo existe.
+    const ativo = await client.query(
+      `SELECT id
              FROM ativos
              WHERE id = $1`,
-            [ativoId]
-        );
+      [ativoId],
+    );
 
-        if (ativo.rowCount === 0) {
-            throw new Error("Ativo não encontrado.");
-        }
+    if (ativo.rowCount === 0) {
+      throw new Error("Ativo não encontrado.");
+    }
 
-        // Calcula o valor da operação.
-        const valorBruto =
-            quantidade * precoUnitario;
+    // Calcula o valor da operação.
+    const valorBruto = quantidade * precoUnitario;
 
-        if (!Number.isFinite(valorBruto)) {
-            throw new Error("Valor da operação inválido.");
-        }
+    if (!Number.isFinite(valorBruto)) {
+      throw new Error("Valor da operação inválido.");
+    }
 
-        if (tipo === "COMPRA") {
+    if (tipo === "COMPRA") {
+      // Custo da compra, incluindo taxas.
+      const valorCompra = valorBruto + taxas;
 
-            // Custo da compra, incluindo taxas.
-            const valorCompra =
-                valorBruto + taxas;
-
-            // Atualiza ou cria a posição.
-            await client.query(
-                `INSERT INTO investimentos (
+      // Atualiza ou cria a posição.
+      await client.query(
+        `INSERT INTO investimentos (
                     carteira_id,
                     ativo_id,
                     quantidade,
@@ -65,65 +60,46 @@ export async function registrarOperacao(
                         investimentos.valor_investido +
                         EXCLUDED.valor_investido,
                     atualizado_em = NOW()`,
-                [
-                    carteiraId,
-                    ativoId,
-                    quantidade,
-                    valorCompra
-                ]
-            );
-
-        } else {
-
-            // Bloqueia a posição durante a venda.
-            const posicao = await client.query(
-                `SELECT
+        [carteiraId, ativoId, quantidade, valorCompra],
+      );
+    } else {
+      // Bloqueia a posição durante a venda.
+      const posicao = await client.query(
+        `SELECT
                     quantidade,
                     valor_investido
                  FROM investimentos
                  WHERE carteira_id = $1
                  AND ativo_id = $2
                  FOR UPDATE`,
-                [carteiraId, ativoId]
-            );
+        [carteiraId, ativoId],
+      );
 
-            if (posicao.rowCount === 0) {
-                throw new Error(
-                    "Você não possui esse ativo na carteira."
-                );
-            }
+      if (posicao.rowCount === 0) {
+        throw new Error("Você não possui esse ativo na carteira.");
+      }
 
-            const quantidadeAtual = Number(
-                posicao.rows[0].quantidade
-            );
+      const quantidadeAtual = Number(posicao.rows[0].quantidade);
 
-            const valorInvestido = Number(
-                posicao.rows[0].valor_investido
-            );
+      const valorInvestido = Number(posicao.rows[0].valor_investido);
 
-            if (quantidade > quantidadeAtual) {
-                throw new Error(
-                    "Quantidade de venda superior à posição disponível."
-                );
-            }
+      if (quantidade > quantidadeAtual) {
+        throw new Error("Quantidade de venda superior à posição disponível.");
+      }
 
-            const quantidadeRestante =
-                quantidadeAtual - quantidade;
+      const quantidadeRestante = quantidadeAtual - quantidade;
 
-            if (quantidadeRestante <= 0.000000005) {
-
-                await client.query(
-                    `DELETE FROM investimentos
+      if (quantidadeRestante <= 0.000000005) {
+        await client.query(
+          `DELETE FROM investimentos
                      WHERE carteira_id = $1
                      AND ativo_id = $2`,
-                    [carteiraId, ativoId]
-                );
-
-            } else {
-
-                // Mantém o custo médio da posição.
-                await client.query(
-                    `UPDATE investimentos
+          [carteiraId, ativoId],
+        );
+      } else {
+        // Mantém o custo médio da posição.
+        await client.query(
+          `UPDATE investimentos
                      SET
                         quantidade = $3::numeric,
                         valor_investido = ROUND(
@@ -134,18 +110,14 @@ export async function registrarOperacao(
                         atualizado_em = NOW()
                      WHERE carteira_id = $1
                      AND ativo_id = $2`,
-                    [
-                        carteiraId,
-                        ativoId,
-                        quantidadeRestante
-                    ]
-                );
-            }
-        }
+          [carteiraId, ativoId, quantidadeRestante],
+        );
+      }
+    }
 
-        // Registra a operação.
-        const resultado = await client.query(
-            `INSERT INTO operacoes (
+    // Registra a operação.
+    const resultado = await client.query(
+      `INSERT INTO operacoes (
                 carteira_id,
                 ativo_id,
                 tipo,
@@ -156,39 +128,32 @@ export async function registrarOperacao(
              )
              VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
-            [
-                carteiraId,
-                ativoId,
-                tipo,
-                quantidade,
-                precoUnitario,
-                taxas,
-                dataOperacao
-            ]
-        );
+      [
+        carteiraId,
+        ativoId,
+        tipo,
+        quantidade,
+        precoUnitario,
+        taxas,
+        dataOperacao,
+      ],
+    );
 
-        await client.query("COMMIT");
+    await client.query("COMMIT");
 
-        return resultado.rows[0];
+    return resultado.rows[0];
+  } catch (erro) {
+    await client.query("ROLLBACK");
 
-    } catch (erro) {
-
-        await client.query("ROLLBACK");
-
-        throw erro;
-
-    } finally {
-
-        client.release();
-    }
+    throw erro;
+  } finally {
+    client.release();
+  }
 }
 
-export async function listarOperacoes(
-    carteiraId: string
-): Promise<Operacao[]> {
-
-    const resultado = await pool.query(
-        `SELECT
+export async function listarOperacoes(carteiraId: string): Promise<Operacao[]> {
+  const resultado = await pool.query(
+    `SELECT
             o.id,
             o.carteira_id,
             o.ativo_id,
@@ -203,35 +168,31 @@ export async function listarOperacoes(
          ORDER BY
             o.data_operacao DESC,
             o.criado_em DESC`,
-        [carteiraId]
-    );
+    [carteiraId],
+  );
 
-    return resultado.rows;
+  return resultado.rows;
 }
 
 export async function buscarOperacoesPorAtivo(
-    carteiraId: string,
-    ativoId: string
+  carteiraId: string,
+  ativoId: string,
 ): Promise<Operacao[]> {
-
-    const resultado = await pool.query(
-        `SELECT *
+  const resultado = await pool.query(
+    `SELECT *
          FROM operacoes
          WHERE carteira_id = $1
          AND ativo_id = $2
          ORDER BY data_operacao DESC, criado_em DESC`,
-        [carteiraId, ativoId]
-    );
+    [carteiraId, ativoId],
+  );
 
-    return resultado.rows;
+  return resultado.rows;
 }
 
-export async function contarOperacoes(
-    carteiraId: string
-) {
-
-    const resultado = await pool.query(
-        `SELECT
+export async function contarOperacoes(carteiraId: string) {
+  const resultado = await pool.query(
+    `SELECT
             COUNT(*) AS total_operacoes,
             COUNT(*) FILTER (
                 WHERE tipo = 'COMPRA'
@@ -241,28 +202,19 @@ export async function contarOperacoes(
             ) AS total_vendas
          FROM operacoes
          WHERE carteira_id = $1`,
-        [carteiraId]
-    );
+    [carteiraId],
+  );
 
-    return {
-        totalOperacoes: Number(
-            resultado.rows[0].total_operacoes
-        ),
-        totalCompras: Number(
-            resultado.rows[0].total_compras
-        ),
-        totalVendas: Number(
-            resultado.rows[0].total_vendas
-        )
-    };
+  return {
+    totalOperacoes: Number(resultado.rows[0].total_operacoes),
+    totalCompras: Number(resultado.rows[0].total_compras),
+    totalVendas: Number(resultado.rows[0].total_vendas),
+  };
 }
 
-export async function calcularTotaisOperacoes(
-    carteiraId: string
-) {
-
-    const resultado = await pool.query(
-        `SELECT
+export async function calcularTotaisOperacoes(carteiraId: string) {
+  const resultado = await pool.query(
+    `SELECT
             COALESCE(
                 SUM(
                     CASE
@@ -285,15 +237,11 @@ export async function calcularTotaisOperacoes(
 
          FROM operacoes
          WHERE carteira_id = $1`,
-        [carteiraId]
-    );
+    [carteiraId],
+  );
 
-    return {
-        totalCompras: Number(
-            resultado.rows[0].total_compras
-        ),
-        totalVendas: Number(
-            resultado.rows[0].total_vendas
-        )
-    };
+  return {
+    totalCompras: Number(resultado.rows[0].total_compras),
+    totalVendas: Number(resultado.rows[0].total_vendas),
+  };
 }
