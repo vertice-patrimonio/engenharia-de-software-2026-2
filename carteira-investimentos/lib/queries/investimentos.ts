@@ -1,13 +1,11 @@
-
 import { pool } from "@/lib/db";
 import { InvestimentoComAtivo } from "@/lib/tipos";
 
 export async function listarInvestimentos(
-    carteiraId: string
+  carteiraId: string,
 ): Promise<InvestimentoComAtivo[]> {
-
-    const resultado = await pool.query(
-        `SELECT
+  const resultado = await pool.query(
+    `SELECT
             i.id,
             a.id AS ativo_id,
             a.ticker,
@@ -25,19 +23,18 @@ export async function listarInvestimentos(
             ON a.id = i.ativo_id
          WHERE i.carteira_id = $1
          ORDER BY a.ticker`,
-        [carteiraId]
-    );
+    [carteiraId],
+  );
 
-    return resultado.rows;
+  return resultado.rows;
 }
 
 export async function buscarInvestimento(
-    investimentoId: string,
-    carteiraId: string
+  investimentoId: string,
+  carteiraId: string,
 ): Promise<InvestimentoComAtivo | null> {
-
-    const resultado = await pool.query(
-        `SELECT
+  const resultado = await pool.query(
+    `SELECT
             i.id,
             a.id AS ativo_id,
             a.ticker,
@@ -55,54 +52,49 @@ export async function buscarInvestimento(
             ON a.id = i.ativo_id
          WHERE i.id = $1
          AND i.carteira_id = $2`,
-        [investimentoId, carteiraId]
-    );
+    [investimentoId, carteiraId],
+  );
 
-    return resultado.rows[0] ?? null;
+  return resultado.rows[0] ?? null;
 }
 
 export async function calcularTotalInvestido(
-    carteiraId: string
+  carteiraId: string,
 ): Promise<number> {
-
-    const resultado = await pool.query(
-        `SELECT COALESCE(
+  const resultado = await pool.query(
+    `SELECT COALESCE(
             SUM(valor_investido),
             0
          ) AS total_investido
          FROM investimentos
          WHERE carteira_id = $1`,
-        [carteiraId]
-    );
+    [carteiraId],
+  );
 
-    return Number(resultado.rows[0].total_investido);
+  return Number(resultado.rows[0].total_investido);
 }
 
-export async function contarAtivos(
-    carteiraId: string
-): Promise<number> {
-
-    const resultado = await pool.query(
-        `SELECT COUNT(*) AS quantidade_ativos
+export async function contarAtivos(carteiraId: string): Promise<number> {
+  const resultado = await pool.query(
+    `SELECT COUNT(*) AS quantidade_ativos
          FROM investimentos
          WHERE carteira_id = $1`,
-        [carteiraId]
-    );
+    [carteiraId],
+  );
 
-    return Number(resultado.rows[0].quantidade_ativos);
+  return Number(resultado.rows[0].quantidade_ativos);
 }
 
 export async function excluirInvestimento(
-    investimentoId: string,
-    carteiraId: string
+  investimentoId: string,
+  carteiraId: string,
 ): Promise<boolean> {
-
-    const resultado = await pool.query(
-        `DELETE FROM investimentos
+  const resultado = await pool.query(
+    `DELETE FROM investimentos
          WHERE id = $1
          AND carteira_id = $2`,
-        [investimentoId, carteiraId]
-    );
+    [investimentoId, carteiraId],
+  );
 
-    return resultado.rowCount !== 0;
+  return resultado.rowCount !== 0;
 }

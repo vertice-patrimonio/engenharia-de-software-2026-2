@@ -1,11 +1,9 @@
-
 import { pool } from "@/lib/db";
 import { Ativo, TipoAtivo } from "@/lib/tipos";
 
 export async function listarAtivos(): Promise<Ativo[]> {
-
-    const resultado = await pool.query(
-        `SELECT
+  const resultado = await pool.query(
+    `SELECT
             id,
             ticker,
             nome,
@@ -17,18 +15,15 @@ export async function listarAtivos(): Promise<Ativo[]> {
             atualizado_em
          FROM ativos
          WHERE ativo_no_mercado = TRUE
-         ORDER BY ticker`
-    );
+         ORDER BY ticker`,
+  );
 
-    return resultado.rows;
+  return resultado.rows;
 }
 
-export async function pesquisarAtivos(
-    pesquisa: string
-): Promise<Ativo[]> {
-
-    const resultado = await pool.query(
-        `SELECT
+export async function pesquisarAtivos(pesquisa: string): Promise<Ativo[]> {
+  const resultado = await pool.query(
+    `SELECT
             id,
             ticker,
             nome,
@@ -46,18 +41,15 @@ export async function pesquisarAtivos(
          )
          ORDER BY ticker
          LIMIT 30`,
-        [`%${pesquisa.trim()}%`]
-    );
+    [`%${pesquisa.trim()}%`],
+  );
 
-    return resultado.rows;
+  return resultado.rows;
 }
 
-export async function listarAtivosPorTipo(
-    tipo: TipoAtivo
-): Promise<Ativo[]> {
-
-    const resultado = await pool.query(
-        `SELECT
+export async function listarAtivosPorTipo(tipo: TipoAtivo): Promise<Ativo[]> {
+  const resultado = await pool.query(
+    `SELECT
             id,
             ticker,
             nome,
@@ -71,54 +63,47 @@ export async function listarAtivosPorTipo(
          WHERE tipo_ativo = $1
          AND ativo_no_mercado = TRUE
          ORDER BY ticker`,
-        [tipo]
-    );
+    [tipo],
+  );
 
-    return resultado.rows;
+  return resultado.rows;
 }
 
-export async function buscarAtivoPorId(
-    id: string
-): Promise<Ativo | null> {
-
-    const resultado = await pool.query(
-        `SELECT *
+export async function buscarAtivoPorId(id: string): Promise<Ativo | null> {
+  const resultado = await pool.query(
+    `SELECT *
          FROM ativos
          WHERE id = $1`,
-        [id]
-    );
+    [id],
+  );
 
-    return resultado.rows[0] ?? null;
+  return resultado.rows[0] ?? null;
 }
 
 export async function buscarAtivoPorTicker(
-    ticker: string
+  ticker: string,
 ): Promise<Ativo | null> {
-
-    const resultado = await pool.query(
-        `SELECT *
+  const resultado = await pool.query(
+    `SELECT *
          FROM ativos
          WHERE ticker = $1`,
-        [ticker.toUpperCase().trim()]
-    );
+    [ticker.toUpperCase().trim()],
+  );
 
-    return resultado.rows[0] ?? null;
+  return resultado.rows[0] ?? null;
 }
 
-export async function salvarAtivo(
-    ativo: {
-        ticker: string;
-        nome: string;
-        tipo_ativo: TipoAtivo;
-        setor?: string | null;
-        bolsa?: string;
-        logo_url?: string | null;
-        ativo_no_mercado?: boolean;
-    }
-): Promise<Ativo> {
-
-    const resultado = await pool.query(
-        `INSERT INTO ativos (
+export async function salvarAtivo(ativo: {
+  ticker: string;
+  nome: string;
+  tipo_ativo: TipoAtivo;
+  setor?: string | null;
+  bolsa?: string;
+  logo_url?: string | null;
+  ativo_no_mercado?: boolean;
+}): Promise<Ativo> {
+  const resultado = await pool.query(
+    `INSERT INTO ativos (
             ticker,
             nome,
             tipo_ativo,
@@ -139,16 +124,16 @@ export async function salvarAtivo(
             ativo_no_mercado = EXCLUDED.ativo_no_mercado,
             atualizado_em = NOW()
          RETURNING *`,
-        [
-            ativo.ticker.toUpperCase().trim(),
-            ativo.nome,
-            ativo.tipo_ativo,
-            ativo.setor ?? null,
-            ativo.bolsa ?? "B3",
-            ativo.logo_url ?? null,
-            ativo.ativo_no_mercado ?? true
-        ]
-    );
+    [
+      ativo.ticker.toUpperCase().trim(),
+      ativo.nome,
+      ativo.tipo_ativo,
+      ativo.setor ?? null,
+      ativo.bolsa ?? "B3",
+      ativo.logo_url ?? null,
+      ativo.ativo_no_mercado ?? true,
+    ],
+  );
 
-    return resultado.rows[0];
+  return resultado.rows[0];
 }
