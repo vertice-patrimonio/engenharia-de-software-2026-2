@@ -19,7 +19,6 @@ Portanto, este documento diferencia os dados previstos daqueles efetivamente tra
 |---|---|---|---|---|---|
 | Nome completo | Identificar o usuário | Próprio usuário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Previsto no cadastro |
 | E-mail | Identificação e autenticação | Próprio usuário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Previsto no cadastro |
-| CPF | Identificação adicional, se necessária | Próprio usuário e backend autorizado | PostgreSQL, caso seja coletado | A definir pela equipe | Necessidade a confirmar |
 | Senha | Autenticação da conta | Serviço de autenticação; não deve ser exibida em texto puro | Hash seguro no PostgreSQL (previsto) | A definir pela equipe | Implementação pendente |
 | Telefone | Informações de contato | Próprio usuário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Presente na interface |
 | Perfil de investidor | Identificar preferências e perfil de risco | Próprio usuário e backend autorizado | PostgreSQL (previsto) | A definir pela equipe | Planejado |
@@ -54,14 +53,13 @@ Também será necessário estabelecer o procedimento para exclusão ou anonimiza
 
 Até essa definição, não se considera implementada uma política completa de retenção e exclusão.
 
+
 ## 7. Questões pendentes
 
-- [ ] Confirmar a necessidade da coleta de CPF.
-- [ ] Definir quais informações pessoais serão obrigatórias.
-- [ ] Definir os períodos de retenção dos dados.
+- [ ] Definir os períodos de retenção dos dados pessoais.
 - [ ] Estabelecer o procedimento de exclusão de contas e dados pessoais.
-- [ ] Confirmar a implementação do controle de acesso.
-- [ ] Revisar as informações de privacidade apresentadas nas interfaces.
+- [ ] Validar o funcionamento dos controles de autenticação e autorização implementados no backend.
+- [ ] Revisar as informações de segurança e privacidade apresentadas nas interfaces.
 
 ## 8. Considerações finais
 
