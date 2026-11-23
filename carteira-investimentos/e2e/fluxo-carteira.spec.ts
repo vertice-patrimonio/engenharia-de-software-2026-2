@@ -172,7 +172,7 @@ test.describe("Fluxo Completo E2E — Autenticação, Dashboard e Transações",
 
     // 3. Login com o usuário cadastrado
     await page.goto("/login");
-    await page.getByPlaceholder("guilherme@exemplo.com.br").fill(emailUnico);
+    await page.getByPlaceholder("seuemail@exemplo.com.br").fill(emailUnico);
     await page.getByPlaceholder("••••••••••••").fill("SenhaTeste@123");
     await page.getByRole("button", { name: /entrar/i }).click();
     await expect(page).toHaveURL(/\/dashboard/);
