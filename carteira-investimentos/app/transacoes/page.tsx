@@ -67,10 +67,7 @@ export default function TransacoesPage() {
   const [erroModal, setErroModal] = useState("");
   const [salvando, setSalvando] = useState(false);
 
-  async function carregarDados() {
-    setCarregandoDados(true);
-    setErroTela("");
-
+  async function recarregarDados() {
     try {
       const [resOperacoes, resAtivos] = await Promise.all([
         fetch("/api/operacoes"),
@@ -88,20 +85,57 @@ export default function TransacoesPage() {
 
       setOperacoes(dadosOperacoes);
       setAtivos(dadosAtivos);
-
-      if (dadosAtivos.length > 0 && !ativoId) {
-        setAtivoId(dadosAtivos[0].id);
-      }
     } catch {
       setErroTela("Erro de conexão ao carregar transações.");
-    } finally {
-      setCarregandoDados(false);
     }
   }
 
   useEffect(() => {
-    carregarDados();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let ativo = true;
+
+    async function inicializar() {
+      try {
+        const [resOperacoes, resAtivos] = await Promise.all([
+          fetch("/api/operacoes"),
+          fetch("/api/ativos"),
+        ]);
+
+        if (!ativo) return;
+
+        if (!resOperacoes.ok) {
+          const err = await resOperacoes.json();
+          setErroTela(
+            err.erro || "Faça login para visualizar suas transações.",
+          );
+          setCarregandoDados(false);
+          return;
+        }
+
+        const dadosOperacoes = await resOperacoes.json();
+        const dadosAtivos = resAtivos.ok ? await resAtivos.json() : [];
+
+        setOperacoes(dadosOperacoes);
+        setAtivos(dadosAtivos);
+
+        if (dadosAtivos.length > 0) {
+          setAtivoId((atual) => atual || dadosAtivos[0].id);
+        }
+      } catch {
+        if (ativo) {
+          setErroTela("Erro de conexão ao carregar transações.");
+        }
+      } finally {
+        if (ativo) {
+          setCarregandoDados(false);
+        }
+      }
+    }
+
+    inicializar();
+
+    return () => {
+      ativo = false;
+    };
   }, []);
 
   const mapaAtivos = useMemo(() => {
@@ -182,7 +216,7 @@ export default function TransacoesPage() {
       setPrecoUnitario("");
       setTaxas("0");
       setModalAberto(false);
-      await carregarDados();
+      await recarregarDados();
     } catch {
       setErroModal("Erro de conexão com o servidor.");
     } finally {
