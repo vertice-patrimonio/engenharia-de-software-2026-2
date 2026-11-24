@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function isNextPrerenderError(erro: unknown): boolean {
+  if (!erro || typeof erro !== "object") return false;
+  const digest = (erro as { digest?: unknown }).digest;
+  return (
+    typeof digest === "string" &&
+    (digest.startsWith("NEXT_") || digest === "HANGING_PROMISE_REJECTION")
+  );
+}
+
 export async function GET(request: NextRequest) {
   try {
     const rawParam =
@@ -19,7 +28,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const token = process.env.BRAPI_KEY;
+    const token = process.env.BRAPI_TOKEN;
     if (!token) {
       console.error("GET /api/cotacao: BRAPI_TOKEN não definido no ambiente.");
       return NextResponse.json(
@@ -52,6 +61,7 @@ export async function GET(request: NextRequest) {
           const ativo = Array.isArray(json?.results) ? json.results[0] : null;
           return ativo ?? null;
         } catch (errAtivo) {
+          if (isNextPrerenderError(errAtivo)) throw errAtivo;
           console.error(`Erro de rede ao consultar ${simbolo}:`, errAtivo);
           return null;
         }
@@ -72,7 +82,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       results,
-      // Mantém compatibilidade caso algum consumidor leia precoAtual de 1 ativo
       ticker: results[0]?.symbol,
       precoAtual:
         typeof results[0]?.regularMarketPrice === "number"
@@ -81,11 +90,17 @@ export async function GET(request: NextRequest) {
       moeda: results[0]?.currency || "BRL",
     });
   } catch (erro) {
+    if (isNextPrerenderError(erro)) {
+      throw erro;
+    }
+
     console.error("Erro inesperado em GET /api/cotacao:", erro);
     return NextResponse.json(
       {
         erro:
-          erro instanceof Error ? erro.message : "Erro interno ao buscar cotações.",
+          erro instanceof Error
+            ? erro.message
+            : "Erro interno ao buscar cotações.",
       },
       { status: 500 },
     );
