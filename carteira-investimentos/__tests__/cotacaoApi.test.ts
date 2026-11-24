@@ -7,7 +7,7 @@ describe("Integração e Dublê de Teste — API de Cotações (Brapi)", () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    process.env = { ...originalEnv, BRAPI_TOKEN: "token-teste-123" };
+    process.env = { ...originalEnv, BRAPI_KEY: "token-teste-123" };
     global.fetch = jest.fn();
   });
 
@@ -29,7 +29,7 @@ describe("Integração e Dublê de Teste — API de Cotações (Brapi)", () => {
   });
 
   test("deve retornar 500 quando BRAPI_TOKEN não estiver configurada", async () => {
-    delete process.env.BRAPI_TOKEN;
+    delete process.env.BRAPI_KEY;
     const req = new NextRequest(
       "http://localhost:3000/api/cotacao?ticker=PETR4",
     );

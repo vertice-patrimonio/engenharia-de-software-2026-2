@@ -28,11 +28,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const token = process.env.BRAPI_TOKEN;
+    const token = process.env.BRAPI_KEY;
     if (!token) {
-      console.error("GET /api/cotacao: BRAPI_TOKEN não definido no ambiente.");
+      console.error("GET /api/cotacao: BRAPI_KEY não definido no ambiente.");
       return NextResponse.json(
-        { erro: "BRAPI_TOKEN não configurado no servidor." },
+        { erro: "BRAPI_KEY não configurado no servidor." },
         { status: 500 },
       );
     }
