@@ -1,43 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
+import { obterSessaoAtual } from "@/lib/sessao";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
-import { obterUsuarioAutenticado } from "@/lib/auth";
+async function resolverCarteiraId(usuarioId: string, carteiraIdSessao: string | null) {
+  const supabaseAdmin = getSupabaseAdmin();
 
-import { buscarCarteiraPorUsuario } from "@/lib/queries/carteiras";
+  if (carteiraIdSessao) {
+    const { data } = await supabaseAdmin
+      .from("carteiras")
+      .select("id")
+      .eq("id", carteiraIdSessao)
+      .eq("usuario_id", usuarioId)
+      .maybeSingle();
 
-import { listarOperacoes, registrarOperacao } from "@/lib/queries/operacoes";
+    if (data?.id) return data.id;
+  }
 
-import {
-  validarTipoOperacao,
-  validarNumeroPositivo,
-  validarTaxas,
-  validarDataOperacao,
-} from "@/lib/validacoes";
+  const { data: carteira } = await supabaseAdmin
+    .from("carteiras")
+    .select("id")
+    .eq("usuario_id", usuarioId)
+    .order("criado_em", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return carteira?.id ?? null;
+}
 
 export async function GET() {
   try {
-    const sessao = await obterUsuarioAutenticado();
-
+    const sessao = await obterSessaoAtual();
     if (!sessao) {
       return NextResponse.json({ erro: "Não autenticado." }, { status: 401 });
     }
 
-    const carteira = await buscarCarteiraPorUsuario(sessao.id);
+    const carteiraId = await resolverCarteiraId(
+      sessao.usuarioId,
+      sessao.carteiraId,
+    );
 
-    if (!carteira) {
-      return NextResponse.json(
-        { erro: "Carteira não encontrada." },
-        { status: 404 },
-      );
+    if (!carteiraId) {
+      return NextResponse.json([]);
     }
 
-    const operacoes = await listarOperacoes(carteira.id);
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data, error } = await supabaseAdmin
+      .from("operacoes")
+      .select(
+        "id, carteira_id, ativo_id, tipo, quantidade, preco_unitario, taxas, data_operacao, criado_em",
+      )
+      .eq("carteira_id", carteiraId)
+      .order("data_operacao", { ascending: false })
+      .order("criado_em", { ascending: false });
 
-    return NextResponse.json(operacoes);
+    if (error) {
+      console.error("Erro ao consultar operações:", error);
+      return NextResponse.json({ erro: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json(data ?? []);
   } catch (erro) {
-    console.error(erro);
-
+    console.error("Erro interno em GET /api/operacoes:", erro);
     return NextResponse.json(
-      { erro: "Erro ao consultar operações." },
+      { erro: "Erro interno ao carregar operações." },
       { status: 500 },
     );
   }
@@ -45,111 +70,162 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const sessao = await obterUsuarioAutenticado();
-
+    const sessao = await obterSessaoAtual();
     if (!sessao) {
       return NextResponse.json({ erro: "Não autenticado." }, { status: 401 });
     }
 
-    const corpo = await request.json();
+    const carteiraId = await resolverCarteiraId(
+      sessao.usuarioId,
+      sessao.carteiraId,
+    );
 
-    const {
-      ativoId,
-      tipo,
-      quantidade,
-      precoUnitario,
-      taxas = 0,
-      dataOperacao,
-    } = corpo;
-
-    if (
-      typeof ativoId !== "string" ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        ativoId,
-      )
-    ) {
+    if (!carteiraId) {
       return NextResponse.json(
-        { erro: "Identificador do ativo inválido." },
-        { status: 400 },
-      );
-    }
-
-    if (!validarTipoOperacao(tipo)) {
-      return NextResponse.json(
-        { erro: "Tipo de operação inválido." },
-        { status: 400 },
-      );
-    }
-
-    if (!validarNumeroPositivo(quantidade)) {
-      return NextResponse.json(
-        { erro: "Quantidade inválida." },
-        { status: 400 },
-      );
-    }
-
-    if (!validarNumeroPositivo(precoUnitario)) {
-      return NextResponse.json(
-        { erro: "Preço unitário inválido." },
-        { status: 400 },
-      );
-    }
-
-    if (!validarTaxas(taxas)) {
-      return NextResponse.json({ erro: "Taxas inválidas." }, { status: 400 });
-    }
-
-    if (
-      typeof dataOperacao !== "string" ||
-      !validarDataOperacao(dataOperacao)
-    ) {
-      return NextResponse.json(
-        { erro: "Data da operação inválida." },
-        { status: 400 },
-      );
-    }
-
-    const carteira = await buscarCarteiraPorUsuario(sessao.id);
-
-    if (!carteira) {
-      return NextResponse.json(
-        { erro: "Carteira não encontrada." },
+        { erro: "Carteira não encontrada para este usuário." },
         { status: 404 },
       );
     }
 
-    const operacao = await registrarOperacao(carteira.id, {
-      ativoId,
-      tipo,
-      quantidade,
-      precoUnitario,
-      taxas,
-      dataOperacao,
-    });
+    const body = await request.json();
+    const ativoId = String(body.ativoId || body.ativo_id || "").trim();
+    const tipo = String(body.tipo || "").toUpperCase().trim();
+    const quantidade = Number(body.quantidade);
+    const precoUnitario = Number(body.precoUnitario ?? body.preco_unitario);
+    const taxas = Number(body.taxas || 0);
+    const dataOperacao = String(
+      body.dataOperacao || body.data_operacao || "",
+    ).trim();
 
-    return NextResponse.json(
-      {
-        mensagem: "Operação registrada com sucesso.",
-        operacao,
-      },
-      { status: 201 },
-    );
-  } catch (erro) {
-    const mensagem =
-      erro instanceof Error ? erro.message : "Erro ao registrar operação.";
-
-    if (
-      mensagem.includes("não possui") ||
-      mensagem.includes("superior à posição") ||
-      mensagem.includes("não encontrado")
-    ) {
-      return NextResponse.json({ erro: mensagem }, { status: 400 });
+    if (!ativoId || (tipo !== "COMPRA" && tipo !== "VENDA") || !dataOperacao) {
+      return NextResponse.json(
+        { erro: "Preencha ativo, tipo (COMPRA/VENDA) e data da operação." },
+        { status: 400 },
+      );
     }
 
-    console.error("Erro na operação:", erro);
+    if (
+      !Number.isFinite(quantidade) ||
+      quantidade <= 0 ||
+      !Number.isFinite(precoUnitario) ||
+      precoUnitario <= 0 ||
+      !Number.isFinite(taxas) ||
+      taxas < 0
+    ) {
+      return NextResponse.json(
+        { erro: "Quantidade, preço unitário ou taxas inválidos." },
+        { status: 400 },
+      );
+    }
 
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // Consulta posição consolidada atual do ativo na carteira
+    const { data: posicaoAtual, error: erroPosicao } = await supabaseAdmin
+      .from("investimentos")
+      .select("id, quantidade, valor_investido")
+      .eq("carteira_id", carteiraId)
+      .eq("ativo_id", ativoId)
+      .maybeSingle();
+
+    if (erroPosicao) {
+      return NextResponse.json(
+        { erro: "Erro ao verificar posição atual do ativo." },
+        { status: 500 },
+      );
+    }
+
+    const qtdAtual = Number(posicaoAtual?.quantidade || 0);
+    const valorAtual = Number(posicaoAtual?.valor_investido || 0);
+
+    if (tipo === "VENDA" && quantidade > qtdAtual) {
+      return NextResponse.json(
+        {
+          erro: `Quantidade insuficiente para venda. Disponível em custódia: ${qtdAtual}.`,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Insere o registro na tabela 'operacoes'
+    const { data: novaOperacao, error: erroInsertOp } = await supabaseAdmin
+      .from("operacoes")
+      .insert([
+        {
+          carteira_id: carteiraId,
+          ativo_id: ativoId,
+          tipo,
+          quantidade,
+          preco_unitario: precoUnitario,
+          taxas,
+          data_operacao: dataOperacao,
+        },
+      ])
+      .select()
+      .single();
+
+    if (erroInsertOp || !novaOperacao) {
+      return NextResponse.json(
+        { erro: erroInsertOp?.message || "Erro ao registrar operação." },
+        { status: 400 },
+      );
+    }
+
+    // Recalcula posição consolidada em 'investimentos'
+    const agora = new Date().toISOString();
+
+    if (tipo === "COMPRA") {
+      const novaQtd = qtdAtual + quantidade;
+      const novoValor = valorAtual + quantidade * precoUnitario + taxas;
+
+      const { error: erroUpsertInv } = await supabaseAdmin
+        .from("investimentos")
+        .upsert(
+          [
+            {
+              carteira_id: carteiraId,
+              ativo_id: ativoId,
+              quantidade: novaQtd,
+              valor_investido: novoValor,
+              atualizado_em: agora,
+            },
+          ],
+          { onConflict: "carteira_id,ativo_id" },
+        );
+
+      if (erroUpsertInv) {
+        console.error("Erro ao atualizar investimentos na compra:", erroUpsertInv);
+      }
+    } else {
+      const novaQtd = qtdAtual - quantidade;
+
+      if (novaQtd <= 0) {
+        await supabaseAdmin
+          .from("investimentos")
+          .delete()
+          .eq("carteira_id", carteiraId)
+          .eq("ativo_id", ativoId);
+      } else {
+        const precoMedioAtual = qtdAtual > 0 ? valorAtual / qtdAtual : 0;
+        const novoValor = Math.max(0, novaQtd * precoMedioAtual);
+
+        await supabaseAdmin
+          .from("investimentos")
+          .update({
+            quantidade: novaQtd,
+            valor_investido: novoValor,
+            atualizado_em: agora,
+          })
+          .eq("carteira_id", carteiraId)
+          .eq("ativo_id", ativoId);
+      }
+    }
+
+    return NextResponse.json(novaOperacao, { status: 201 });
+  } catch (erro) {
+    console.error("Erro interno em POST /api/operacoes:", erro);
     return NextResponse.json(
-      { erro: "Não foi possível registrar a operação." },
+      { erro: "Erro interno ao registrar operação." },
       { status: 500 },
     );
   }

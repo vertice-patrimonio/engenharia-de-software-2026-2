@@ -1,72 +1,136 @@
 import { NextRequest, NextResponse } from "next/server";
-import argon2 from "argon2";
-
-import { cadastrarUsuario } from "@/lib/queries/usuarios";
-import { criarSessao } from "@/lib/auth";
-import { validarEmail, validarSenha, validarNome } from "@/lib/validacoes";
+import bcrypt from "bcryptjs";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  assinarSessao,
+  NOME_COOKIE_SESSAO,
+  opcoesCookieSessao,
+} from "@/lib/sessao";
 
 export async function POST(request: NextRequest) {
   try {
-    const corpo = await request.json();
+    const body = await request.json();
 
-    const { nome, email, senha } = corpo;
+    const nome = String(body.nome || "").trim();
+    const email = String(body.email || "")
+      .toLowerCase()
+      .trim();
+    const senha = String(body.senha || "");
+    const perfilInvestidor = body.perfil_investidor
+      ? String(body.perfil_investidor).trim()
+      : null;
 
-    if (
-      typeof nome !== "string" ||
-      typeof email !== "string" ||
-      typeof senha !== "string"
-    ) {
-      return NextResponse.json({ erro: "Dados inválidos." }, { status: 400 });
-    }
-
-    if (!validarNome(nome)) {
-      return NextResponse.json({ erro: "Nome inválido." }, { status: 400 });
-    }
-
-    if (!validarEmail(email)) {
-      return NextResponse.json({ erro: "E-mail inválido." }, { status: 400 });
-    }
-
-    if (!validarSenha(senha)) {
+    if (!nome || !email || !senha) {
       return NextResponse.json(
-        {
-          erro: "A senha deve possuir pelo menos 8 caracteres.",
-        },
+        { erro: "Nome, e-mail e senha são obrigatórios." },
         { status: 400 },
       );
     }
 
-    const senhaHash = await argon2.hash(senha, {
-      type: argon2.argon2id,
-    });
-
-    const usuario = await cadastrarUsuario(nome, email, senhaHash);
-
-    await criarSessao(usuario.id);
-
-    return NextResponse.json(
-      {
-        mensagem: "Usuário cadastrado com sucesso.",
-        usuario,
-      },
-      { status: 201 },
-    );
-  } catch (erro: unknown) {
-    const erroBanco = erro as {
-      code?: string;
-    };
-
-    if (erroBanco.code === "23505") {
+    if (senha.length < 6) {
       return NextResponse.json(
-        { erro: "Este e-mail já está cadastrado." },
+        { erro: "A senha deve ter pelo menos 6 caracteres." },
+        { status: 400 },
+      );
+    }
+
+    const supabaseAdmin = getSupabaseAdmin();
+
+    // 1. Verifica se já existe usuário com o mesmo e-mail
+    const { data: usuarioExistente, error: erroConsulta } = await supabaseAdmin
+      .from("usuarios")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (erroConsulta) {
+      console.error("Erro ao verificar e-mail:", erroConsulta);
+      return NextResponse.json(
+        { erro: "Erro ao validar usuário no banco." },
+        { status: 500 },
+      );
+    }
+
+    if (usuarioExistente) {
+      return NextResponse.json(
+        { erro: "Já existe uma conta cadastrada com este e-mail." },
         { status: 409 },
       );
     }
 
-    console.error("Erro no cadastro:", erro);
+    // 2. Gera o hash da senha
+    const senhaHash = await bcrypt.hash(senha, 10);
 
+    // 3. Insere o usuário na tabela 'usuarios'
+    const { data: novoUsuario, error: erroUsuario } = await supabaseAdmin
+      .from("usuarios")
+      .insert([
+        {
+          nome,
+          email,
+          senha_hash: senhaHash,
+          perfil_investidor: perfilInvestidor,
+        },
+      ])
+      .select("id, nome, email, perfil_investidor, criado_em")
+      .single();
+
+    if (erroUsuario || !novoUsuario) {
+      console.error("Erro ao criar usuário:", erroUsuario);
+      return NextResponse.json(
+        { erro: erroUsuario?.message || "Não foi possível cadastrar o usuário." },
+        { status: 400 },
+      );
+    }
+
+    // 4. Cria automaticamente a carteira padrão na tabela 'carteiras'
+    const { data: novaCarteira, error: erroCarteira } = await supabaseAdmin
+      .from("carteiras")
+      .insert([
+        {
+          usuario_id: novoUsuario.id,
+          nome: "Minha carteira",
+        },
+      ])
+      .select("id, usuario_id, nome, criado_em")
+      .single();
+
+    if (erroCarteira || !novaCarteira) {
+      console.error("Erro ao criar carteira automática:", erroCarteira);
+
+      // Rollback: remove o usuário se a carteira não pôde ser criada
+      await supabaseAdmin.from("usuarios").delete().eq("id", novoUsuario.id);
+
+      return NextResponse.json(
+        { erro: "Erro ao inicializar a carteira do usuário." },
+        { status: 500 },
+      );
+    }
+
+    // 5. Assina o token e grava o cookie HttpOnly de sessão
+    const token = assinarSessao({
+      usuarioId: novoUsuario.id,
+      nome: novoUsuario.nome,
+      email: novoUsuario.email,
+      carteiraId: novaCarteira.id,
+    });
+
+    const response = NextResponse.json(
+      {
+        mensagem: "Conta e carteira criadas com sucesso.",
+        usuario: novoUsuario,
+        carteira: novaCarteira,
+      },
+      { status: 201 },
+    );
+
+    response.cookies.set(NOME_COOKIE_SESSAO, token, opcoesCookieSessao());
+
+    return response;
+  } catch (erro) {
+    console.error("Erro interno no cadastro:", erro);
     return NextResponse.json(
-      { erro: "Não foi possível realizar o cadastro." },
+      { erro: "Erro interno ao processar o cadastro." },
       { status: 500 },
     );
   }

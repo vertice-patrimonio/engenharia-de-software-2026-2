@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-
 import { obterUsuarioAutenticado } from "@/lib/auth";
-
 import { buscarCarteiraPorUsuario } from "@/lib/queries/carteiras";
-
 import { excluirInvestimento } from "@/lib/queries/investimentos";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 interface Contexto {
   params: Promise<{
@@ -21,6 +21,13 @@ export async function DELETE(_request: Request, context: Contexto) {
     }
 
     const { id } = await context.params;
+
+    if (!UUID_REGEX.test(id)) {
+      return NextResponse.json(
+        { erro: "ID de investimento inválido." },
+        { status: 400 },
+      );
+    }
 
     const carteira = await buscarCarteiraPorUsuario(sessao.id);
 
@@ -44,7 +51,7 @@ export async function DELETE(_request: Request, context: Contexto) {
       mensagem: "Posição removida com sucesso.",
     });
   } catch (erro) {
-    console.error(erro);
+    console.error("Erro em DELETE /api/investimentos/[id]:", erro);
 
     return NextResponse.json(
       { erro: "Erro ao excluir investimento." },

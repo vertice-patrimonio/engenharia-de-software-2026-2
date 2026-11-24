@@ -1,59 +1,83 @@
 import { NextRequest, NextResponse } from "next/server";
-import argon2 from "argon2";
-
-import { buscarUsuarioPorEmail } from "@/lib/queries/usuarios";
-import { criarSessao } from "@/lib/auth";
-import { validarEmail } from "@/lib/validacoes";
+import bcrypt from "bcryptjs";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  assinarSessao,
+  NOME_COOKIE_SESSAO,
+  opcoesCookieSessao,
+} from "@/lib/sessao";
 
 export async function POST(request: NextRequest) {
   try {
-    const corpo = await request.json();
+    const body = await request.json();
+    const email = String(body.email || "")
+      .toLowerCase()
+      .trim();
+    const senha = String(body.senha || "");
 
-    const { email, senha } = corpo;
-
-    if (
-      typeof email !== "string" ||
-      typeof senha !== "string" ||
-      !validarEmail(email)
-    ) {
+    if (!email || !senha) {
       return NextResponse.json(
-        { erro: "Credenciais inválidas." },
+        { erro: "Informe e-mail e senha." },
         { status: 400 },
       );
     }
 
-    const usuario = await buscarUsuarioPorEmail(email);
+    const supabaseAdmin = getSupabaseAdmin();
 
-    if (!usuario) {
+    const { data: usuario, error } = await supabaseAdmin
+      .from("usuarios")
+      .select("id, nome, email, senha_hash, perfil_investidor")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (error || !usuario) {
       return NextResponse.json(
-        { erro: "E-mail ou senha incorretos." },
+        { erro: "E-mail ou senha inválidos." },
         { status: 401 },
       );
     }
 
-    const senhaCorreta = await argon2.verify(usuario.senha_hash, senha);
-
-    if (!senhaCorreta) {
+    const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
+    if (!senhaValida) {
       return NextResponse.json(
-        { erro: "E-mail ou senha incorretos." },
+        { erro: "E-mail ou senha inválidos." },
         { status: 401 },
       );
     }
 
-    await criarSessao(usuario.id);
+    const { data: carteira } = await supabaseAdmin
+      .from("carteiras")
+      .select("id, nome")
+      .eq("usuario_id", usuario.id)
+      .order("criado_em", { ascending: true })
+      .limit(1)
+      .maybeSingle();
 
-    const { senha_hash: _senhaHash, ...usuarioSeguro } = usuario;
-
-    return NextResponse.json({
-      mensagem: "Login realizado com sucesso.",
-      usuario: usuarioSeguro,
+    const token = assinarSessao({
+      usuarioId: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      carteiraId: carteira?.id ?? null,
     });
+
+    const response = NextResponse.json({
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        perfil_investidor: usuario.perfil_investidor,
+      },
+      carteira,
+    });
+
+    response.cookies.set(NOME_COOKIE_SESSAO, token, opcoesCookieSessao());
+    return response;
   } catch (erro) {
     console.error("Erro no login:", erro);
-
     return NextResponse.json(
-      { erro: "Não foi possível realizar o login." },
+      { erro: "Erro interno ao autenticar." },
       { status: 500 },
     );
   }
 }
+

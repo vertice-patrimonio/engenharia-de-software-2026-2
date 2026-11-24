@@ -1,50 +1,80 @@
 import { NextResponse } from "next/server";
+import { obterSessaoAtual } from "@/lib/sessao";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
-import { obterUsuarioAutenticado } from "@/lib/auth";
+async function resolverCarteiraId(usuarioId: string, carteiraIdSessao: string | null) {
+  const supabaseAdmin = getSupabaseAdmin();
 
-import { buscarCarteiraPorUsuario } from "@/lib/queries/carteiras";
+  if (carteiraIdSessao) {
+    const { data } = await supabaseAdmin
+      .from("carteiras")
+      .select("id")
+      .eq("id", carteiraIdSessao)
+      .eq("usuario_id", usuarioId)
+      .maybeSingle();
 
-import {
-  listarInvestimentos,
-  calcularTotalInvestido,
-  contarAtivos,
-} from "@/lib/queries/investimentos";
+    if (data?.id) return data.id;
+  }
+
+  const { data: carteira } = await supabaseAdmin
+    .from("carteiras")
+    .select("id")
+    .eq("usuario_id", usuarioId)
+    .order("criado_em", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return carteira?.id ?? null;
+}
 
 export async function GET() {
   try {
-    const sessao = await obterUsuarioAutenticado();
-
+    const sessao = await obterSessaoAtual();
     if (!sessao) {
       return NextResponse.json({ erro: "Não autenticado." }, { status: 401 });
     }
 
-    const carteira = await buscarCarteiraPorUsuario(sessao.id);
+    const carteiraId = await resolverCarteiraId(
+      sessao.usuarioId,
+      sessao.carteiraId,
+    );
 
-    if (!carteira) {
-      return NextResponse.json(
-        { erro: "Carteira não encontrada." },
-        { status: 404 },
-      );
+    if (!carteiraId) {
+      return NextResponse.json({
+        investimentos: [],
+        totalInvestido: 0,
+        quantidadeAtivos: 0,
+      });
     }
 
-    const [investimentos, totalInvestido, quantidadeAtivos] = await Promise.all(
-      [
-        listarInvestimentos(carteira.id),
-        calcularTotalInvestido(carteira.id),
-        contarAtivos(carteira.id),
-      ],
+    const supabaseAdmin = getSupabaseAdmin();
+    const { data, error } = await supabaseAdmin
+      .from("investimentos")
+      .select("id, carteira_id, ativo_id, quantidade, valor_investido, atualizado_em")
+      .eq("carteira_id", carteiraId)
+      .gt("quantidade", 0)
+      .order("valor_investido", { ascending: false });
+
+    if (error) {
+      console.error("Erro ao consultar investimentos:", error);
+      return NextResponse.json({ erro: error.message }, { status: 400 });
+    }
+
+    const lista = data ?? [];
+    const totalInvestido = lista.reduce(
+      (acc, item) => acc + Number(item.valor_investido || 0),
+      0,
     );
 
     return NextResponse.json({
-      investimentos,
+      investimentos: lista,
       totalInvestido,
-      quantidadeAtivos,
+      quantidadeAtivos: lista.length,
     });
   } catch (erro) {
-    console.error(erro);
-
+    console.error("Erro interno em /api/investimentos:", erro);
     return NextResponse.json(
-      { erro: "Erro ao consultar investimentos." },
+      { erro: "Erro interno ao carregar investimentos." },
       { status: 500 },
     );
   }

@@ -30,7 +30,7 @@ export default function PainelAtivos() {
         // Faz a chamada para a SUA rota interna, pedindo dados de PETR4 e VALE3
         // (A sua rota /api/cotacao precisará repassar esses símbolos para a brapi)
         const resposta = await fetch(
-          "/api/cotacao?ticker=PETR4,VALE3,ITUB4,MGLU3",
+          "/api/cotacao?ticker=PETR4,VALE3,ITUB4,MGLU3,HGLG11,XPLG11,WEGE3,MXRF11",
         );
 
         if (!resposta.ok) throw new Error("Falha ao buscar cotações");

@@ -22,7 +22,8 @@ interface Ativo {
   id: string;
   ticker: string;
   nome: string;
-  tipo: string;
+  tipo?: string;
+  tipo_ativo?: string;
 }
 
 const formatarMoeda = (valor: number) =>
@@ -30,6 +31,14 @@ const formatarMoeda = (valor: number) =>
     style: "currency",
     currency: "BRL",
   });
+
+const formatarQuantidade = (valor: number) => {
+  const temDecimal = valor % 1 !== 0;
+  return valor.toLocaleString("pt-BR", {
+    minimumFractionDigits: temDecimal ? 2 : 0,
+    maximumFractionDigits: temDecimal ? 4 : 0,
+  });
+};
 
 export default function DashboardHome() {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
@@ -81,27 +90,27 @@ export default function DashboardHome() {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <header>
-        <p className="text-slate-400 mb-1">
+        <p className="text-slate-500 text-sm mb-1">
           Olá,{" "}
-          <span className="font-semibold text-white">
+          <span className="font-semibold text-slate-900">
             {usuario?.nome || (carregando ? "..." : "Investidor")}
           </span>
         </p>
-        <h1 className="text-3xl font-bold text-white">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
           Aqui está o panorama completo do seu patrimônio consolidado hoje.
         </h1>
       </header>
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-          <h3 className="text-sm font-medium text-slate-400 mb-2 uppercase tracking-wider">
+        <div className="bg-white border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 rounded-2xl">
+          <h3 className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
             Patrimônio Total Consolidado
           </h3>
-          <p className="text-4xl font-bold text-white">
+          <p className="text-4xl font-bold text-slate-900">
             {carregando ? "Carregando..." : formatarMoeda(totalInvestido)}
           </p>
-          <p className="text-emerald-400 text-sm mt-2 font-medium">
+          <p className="text-emerald-600 text-sm mt-2 font-medium">
             {quantidadeAtivos}{" "}
             {quantidadeAtivos === 1
               ? "ativo em custódia"
@@ -109,21 +118,21 @@ export default function DashboardHome() {
           </p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
-          <div className="flex justify-between items-start">
+        <div className="bg-white border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.04)] p-6 rounded-2xl">
+          <div className="flex justify-between items-start gap-4">
             <div>
-              <h3 className="text-sm font-medium text-slate-400 mb-2 uppercase tracking-wider">
+              <h3 className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
                 Perfil do Investidor
               </h3>
-              <p className="text-3xl font-bold text-white capitalize">
+              <p className="text-3xl font-bold text-slate-900 capitalize">
                 {usuario?.perfil_investidor || "Não definido"}
               </p>
-              <p className="text-slate-400 text-sm mt-2">
+              <p className="text-slate-500 text-sm mt-2">
                 {usuario?.email || "Sessão ativa"}
               </p>
             </div>
-            <div className="bg-slate-800 p-2 rounded flex flex-col items-center">
-              <span className="text-xs text-slate-400">
+            <div className="bg-slate-100 px-3 py-1.5 rounded-lg shrink-0">
+              <span className="text-xs font-medium text-slate-600">
                 Ambiente Criptografado
               </span>
             </div>
@@ -131,56 +140,58 @@ export default function DashboardHome() {
         </div>
       </div>
 
+      {/* Acompanhamento de Mercado */}
       <section className="mt-8">
-        <h2 className="text-xl font-semibold text-white mb-4">
+        <h2 className="text-xl font-semibold text-slate-900 mb-4">
           Acompanhamento de Mercado
         </h2>
         <PainelAtivos />
       </section>
 
       {/* Tabela de Investimentos */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="bg-white border border-slate-200/80 shadow-[0_1px_3px_rgba(15,23,42,0.04)] rounded-2xl overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-white">
+            <h3 className="text-lg font-bold text-slate-900">
               Meus Investimentos
             </h3>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-500">
               Principais posições ativas em custódia
             </p>
           </div>
           <Link
             href="/transacoes"
-            className="text-sm font-semibold text-emerald-400 hover:underline"
+            className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 hover:underline whitespace-nowrap"
           >
             + Registrar movimentação
           </Link>
         </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-950/50 text-slate-400 text-xs uppercase tracking-wider">
-                <th className="p-4 font-medium">Ativo/Produto</th>
-                <th className="p-4 font-medium">Classe</th>
-                <th className="p-4 font-medium text-right">Quantidade</th>
-                <th className="p-4 font-medium text-right">Preço Médio</th>
-                <th className="p-4 font-medium text-right">Total Investido</th>
+              <tr className="bg-slate-50/80 border-b border-slate-100 text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
+                <th className="p-4">Ativo/Produto</th>
+                <th className="p-4">Classe</th>
+                <th className="p-4 text-right">Quantidade</th>
+                <th className="p-4 text-right">Preço Médio</th>
+                <th className="p-4 text-right">Total Investido</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 text-sm text-white">
+            <tbody className="divide-y divide-slate-100 text-sm text-slate-800">
               {carregando ? (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-slate-400">
+                  <td colSpan={5} className="p-6 text-center text-slate-500">
                     Carregando posições da carteira...
                   </td>
                 </tr>
               ) : investimentos.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-6 text-center text-slate-400">
+                  <td colSpan={5} className="p-6 text-center text-slate-500">
                     Nenhum ativo em custódia ainda. Acesse{" "}
                     <Link
                       href="/transacoes"
-                      className="text-emerald-400 hover:underline"
+                      className="text-emerald-600 font-medium hover:underline"
                     >
                       Transações
                     </Link>{" "}
@@ -193,28 +204,33 @@ export default function DashboardHome() {
                   const qtd = Number(inv.quantidade);
                   const total = Number(inv.valor_investido);
                   const precoMedio = qtd > 0 ? total / qtd : 0;
+                  const classeAtivo = ativo?.tipo_ativo || ativo?.tipo || "-";
 
                   return (
                     <tr
                       key={inv.id || inv.ativo_id}
-                      className="hover:bg-slate-800/40"
+                      className="hover:bg-slate-50/70 transition-colors"
                     >
                       <td className="p-4">
-                        <div className="font-semibold text-white">
+                        <div className="font-bold text-slate-900">
                           {ativo?.ticker || "ATIVO"}
                         </div>
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-slate-500">
                           {ativo?.nome || inv.ativo_id}
                         </div>
                       </td>
-                      <td className="p-4 text-slate-300">
-                        {ativo?.tipo || "-"}
+                      <td className="p-4 whitespace-nowrap">
+                        <span className="inline-block px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-medium">
+                          {classeAtivo}
+                        </span>
                       </td>
-                      <td className="p-4 text-right text-slate-300">{qtd}</td>
-                      <td className="p-4 text-right text-slate-300">
+                      <td className="p-4 text-right font-medium text-slate-700 whitespace-nowrap">
+                        {formatarQuantidade(qtd)}
+                      </td>
+                      <td className="p-4 text-right font-medium text-slate-700 whitespace-nowrap">
                         {formatarMoeda(precoMedio)}
                       </td>
-                      <td className="p-4 text-right font-semibold text-emerald-400">
+                      <td className="p-4 text-right font-bold text-slate-900 whitespace-nowrap">
                         {formatarMoeda(total)}
                       </td>
                     </tr>

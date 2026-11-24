@@ -1,54 +1,93 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const ticker = searchParams.get("ticker");
+export async function GET(request: NextRequest) {
+  try {
+    const rawParam =
+      request.nextUrl.searchParams.get("ticker") ||
+      request.nextUrl.searchParams.get("tickers") ||
+      "";
 
-  if (!ticker) {
-    return NextResponse.json({ erro: "Ticker não informado" }, { status: 400 });
-  }
+    const tickers = rawParam
+      .split(",")
+      .map((item) => item.toUpperCase().trim())
+      .filter(Boolean);
 
-  const token = process.env.BRAPI_KEY; // Certifique-se de que a variável de ambiente está configurada corretamente
+    if (tickers.length === 0) {
+      return NextResponse.json(
+        { erro: "Informe pelo menos um ticker em ?ticker=..." },
+        { status: 400 },
+      );
+    }
 
-  if (!token) {
+    const token = process.env.BRAPI_KEY;
+    if (!token) {
+      console.error("GET /api/cotacao: BRAPI_TOKEN não definido no ambiente.");
+      return NextResponse.json(
+        { erro: "BRAPI_TOKEN não configurado no servidor." },
+        { status: 500 },
+      );
+    }
+
+    const consultas = await Promise.all(
+      tickers.map(async (simbolo) => {
+        try {
+          const url = `https://brapi.dev/api/quote/${encodeURIComponent(simbolo)}`;
+          const res = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            cache: "no-store",
+          });
+
+          if (!res.ok) {
+            const corpo = await res.text().catch(() => "");
+            console.error(
+              `Brapi falhou para ${simbolo} (HTTP ${res.status}):`,
+              corpo,
+            );
+            return null;
+          }
+
+          const json = await res.json();
+          const ativo = Array.isArray(json?.results) ? json.results[0] : null;
+          return ativo ?? null;
+        } catch (errAtivo) {
+          console.error(`Erro de rede ao consultar ${simbolo}:`, errAtivo);
+          return null;
+        }
+      }),
+    );
+
+    const results = consultas.filter(Boolean);
+
+    if (results.length === 0) {
+      return NextResponse.json(
+        {
+          erro: "Nenhuma cotação retornada pela Brapi.",
+          results: [],
+        },
+        { status: 502 },
+      );
+    }
+
+    return NextResponse.json({
+      results,
+      // Mantém compatibilidade caso algum consumidor leia precoAtual de 1 ativo
+      ticker: results[0]?.symbol,
+      precoAtual:
+        typeof results[0]?.regularMarketPrice === "number"
+          ? results[0].regularMarketPrice
+          : null,
+      moeda: results[0]?.currency || "BRL",
+    });
+  } catch (erro) {
+    console.error("Erro inesperado em GET /api/cotacao:", erro);
     return NextResponse.json(
-      { erro: "Chave da API não configurada" },
+      {
+        erro:
+          erro instanceof Error ? erro.message : "Erro interno ao buscar cotações.",
+      },
       { status: 500 },
     );
   }
-
-  // Usa a exata URL v2 que você validou com sucesso
-  const res = await fetch(
-    `https://brapi.dev/api/v2/stocks/quote?symbols=${ticker}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      // Faz cache por 60 segundos para poupar o limite da sua conta
-      next: { revalidate: 60 },
-    },
-  );
-
-  // Tratamento de limite de requisições exigido pela Brapi (HTTP 429)
-  if (res.status === 429) {
-    const retryAfter = res.headers.get("Retry-After") || "60";
-    return NextResponse.json(
-      { erro: "Limite atingido." },
-      { status: 429, headers: { "Retry-After": retryAfter } },
-    );
-  }
-
-  const data = await res.json();
-
-  // Verifica se a API retornou erro ou se a propriedade results não existe
-  if (data.error || !data.results || data.results.length === 0) {
-    return NextResponse.json(
-      { erro: "Ativo não encontrado ou erro na API" },
-      { status: 404 },
-    );
-  }
-
-  // RETORNO CRÍTICO: Devolvemos a variável 'data' inteira
-  // Assim, o frontend recebe o "results" completo para desenhar os cartões
-  return NextResponse.json(data);
 }
