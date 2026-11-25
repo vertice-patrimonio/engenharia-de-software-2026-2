@@ -28,7 +28,7 @@ describe("Integração e Dublê de Teste — API de Cotações (Brapi)", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  test("deve retornar 500 quando BRAPI_TOKEN não estiver configurada", async () => {
+  test("deve retornar 500 quando BRAPI_KEY não estiver configurada", async () => {
     delete process.env.BRAPI_KEY;
     const req = new NextRequest(
       "http://localhost:3000/api/cotacao?ticker=PETR4",
@@ -39,7 +39,7 @@ describe("Integração e Dublê de Teste — API de Cotações (Brapi)", () => {
 
     expect(response.status).toBe(500);
     expect(body).toEqual({
-      erro: "BRAPI_TOKEN não configurado no servidor.",
+      erro: "BRAPI_KEY não configurado no servidor.",
     });
   });
 

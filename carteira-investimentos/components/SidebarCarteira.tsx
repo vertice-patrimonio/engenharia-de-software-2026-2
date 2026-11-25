@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Home,
-  Wallet,
-  ArrowLeftRight,
-  User,
-  LogOut,
-} from "lucide-react";
+import { Home, Wallet, ArrowLeftRight, User, LogOut } from "lucide-react";
 
 interface SidebarCarteiraProps {
   onLogout?: () => void;

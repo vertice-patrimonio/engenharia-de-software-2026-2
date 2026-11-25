@@ -93,10 +93,10 @@ export default function TransacoesPage() {
 
   useEffect(() => {
     let ativo = true;
-
-    setDataOperacao((atual) => atual || new Date().toISOString().split("T")[0]);
-
     async function inicializar() {
+      setDataOperacao(
+        (atual) => atual || new Date().toISOString().split("T")[0],
+      );
       try {
         const [resOperacoes, resAtivos] = await Promise.all([
           fetch("/api/operacoes", { cache: "no-store" }),
@@ -565,7 +565,7 @@ export default function TransacoesPage() {
                   >
                     Nenhuma transação encontrada.
                     <p className="mt-1 text-xs text-slate-400">
-                      Clique em "Nova transação" para registrar sua
+                      Clique em &quot;Nova transação&quot; para registrar sua
                       primeira operação.
                     </p>
                   </td>

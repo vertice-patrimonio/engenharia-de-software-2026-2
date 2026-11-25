@@ -19,11 +19,16 @@ function getSecret(): string {
   return secret;
 }
 
-export function assinarSessao(payload: Omit<DadosSessao, "exp">, diasValidade = 7): string {
+export function assinarSessao(
+  payload: Omit<DadosSessao, "exp">,
+  diasValidade = 7,
+): string {
   const exp = Math.floor(Date.now() / 1000) + diasValidade * 24 * 60 * 60;
   const dadosCompletos: DadosSessao = { ...payload, exp };
 
-  const dataBase64 = Buffer.from(JSON.stringify(dadosCompletos)).toString("base64url");
+  const dataBase64 = Buffer.from(JSON.stringify(dadosCompletos)).toString(
+    "base64url",
+  );
   const assinatura = crypto
     .createHmac("sha256", getSecret())
     .update(dataBase64)
@@ -32,7 +37,9 @@ export function assinarSessao(payload: Omit<DadosSessao, "exp">, diasValidade = 
   return `${dataBase64}.${assinatura}`;
 }
 
-export function verificarTokenSessao(token?: string | null): DadosSessao | null {
+export function verificarTokenSessao(
+  token?: string | null,
+): DadosSessao | null {
   if (!token) return null;
 
   const partes = token.split(".");
