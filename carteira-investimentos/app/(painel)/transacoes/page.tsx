@@ -785,7 +785,8 @@ export default function TransacoesPage() {
                       </div>
                     ) : resultadosBuscaAtivo.length === 0 ? (
                       <div className="p-3 text-xs text-slate-500">
-                        Nenhum ativo encontrado para &quot;{termoBuscaAtivo}&quot;.
+                        Nenhum ativo encontrado para &quot;{termoBuscaAtivo}
+                        &quot;.
                       </div>
                     ) : (
                       resultadosBuscaAtivo.map((item, idx) => (

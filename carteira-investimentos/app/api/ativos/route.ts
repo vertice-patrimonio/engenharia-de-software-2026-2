@@ -14,7 +14,13 @@ function mapearTipoBrapi(tipoBrapi?: string, ticker?: string): TipoAtivo {
   const sim = (ticker || "").toUpperCase();
 
   if (t === "fund" || sim.endsWith("11")) return "FII";
-  if (t === "bdr" || sim.endsWith("34") || sim.endsWith("35") || sim.endsWith("39")) return "BDR";
+  if (
+    t === "bdr" ||
+    sim.endsWith("34") ||
+    sim.endsWith("35") ||
+    sim.endsWith("39")
+  )
+    return "BDR";
   if (t === "etf") return "ETF";
   if (t === "stock") return "ACAO";
   return "OUTRO";
