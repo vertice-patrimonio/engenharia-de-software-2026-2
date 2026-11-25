@@ -12,16 +12,21 @@ import {
   Wallet,
   CircleDollarSign,
   X,
+  Check,
 } from "lucide-react";
 
 type TipoOperacao = "COMPRA" | "VENDA";
 
 interface Ativo {
-  id: string;
+  id: string | null;
   ticker: string;
   nome: string;
   tipo?: string;
   tipo_ativo?: string;
+  setor?: string | null;
+  bolsa?: string | null;
+  logo_url?: string | null;
+  origem?: string;
 }
 
 interface OperacaoAPI {
@@ -55,9 +60,17 @@ export default function TransacoesPage() {
   const [busca, setBusca] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
 
-  // Estados do Modal de Nova Transação (sem new Date() direto no useState para não bloquear o prerender no Next.js 16)
+  // Estados do Modal de Nova Transação
   const [modalAberto, setModalAberto] = useState(false);
   const [ativoId, setAtivoId] = useState("");
+  const [ativoSelecionadoObj, setAtivoSelecionadoObj] = useState<Ativo | null>(
+    null,
+  );
+  const [termoBuscaAtivo, setTermoBuscaAtivo] = useState("");
+  const [resultadosBuscaAtivo, setResultadosBuscaAtivo] = useState<Ativo[]>([]);
+  const [buscandoAtivosB3, setBuscandoAtivosB3] = useState(false);
+  const [dropdownAtivoAberto, setDropdownAtivoAberto] = useState(false);
+
   const [tipo, setTipo] = useState<TipoOperacao>("COMPRA");
   const [quantidade, setQuantidade] = useState("");
   const [precoUnitario, setPrecoUnitario] = useState("");
@@ -125,8 +138,13 @@ export default function TransacoesPage() {
         setOperacoes(listaOperacoes);
         setAtivos(listaAtivos);
 
-        if (listaAtivos.length > 0) {
-          setAtivoId((atual) => atual || listaAtivos[0].id);
+        if (listaAtivos.length > 0 && listaAtivos[0].id) {
+          setAtivoId((atual) => atual || listaAtivos[0].id!);
+          setAtivoSelecionadoObj((atual) => atual || listaAtivos[0]);
+          setTermoBuscaAtivo(
+            (atual) =>
+              atual || `${listaAtivos[0].ticker} — ${listaAtivos[0].nome}`,
+          );
         }
       } catch {
         if (ativo) {
@@ -146,12 +164,41 @@ export default function TransacoesPage() {
     };
   }, []);
 
-  // Busca automaticamente o preço unitário atual ao abrir o modal ou trocar o ativo
+  // Pesquisa dinâmica na B3 + Banco de Dados com debounce
   useEffect(() => {
-    if (!modalAberto || !ativoId) return;
+    if (!modalAberto || !dropdownAtivoAberto) return;
 
-    const ativoSelecionado = ativos.find((a) => a.id === ativoId);
-    if (!ativoSelecionado?.ticker) return;
+    const termoLimpo = termoBuscaAtivo.split("—")[0].trim();
+    if (!termoLimpo) return;
+
+    let cancelado = false;
+    const timer = setTimeout(async () => {
+      try {
+        setBuscandoAtivosB3(true);
+        const res = await fetch(
+          `/api/ativos?search=${encodeURIComponent(termoLimpo)}`,
+          { cache: "no-store" },
+        );
+        if (!cancelado && res.ok) {
+          const lista = await res.json();
+          setResultadosBuscaAtivo(Array.isArray(lista) ? lista : []);
+        }
+      } catch {
+        if (!cancelado) setResultadosBuscaAtivo(ativos);
+      } finally {
+        if (!cancelado) setBuscandoAtivosB3(false);
+      }
+    }, 300);
+
+    return () => {
+      cancelado = true;
+      clearTimeout(timer);
+    };
+  }, [termoBuscaAtivo, modalAberto, dropdownAtivoAberto, ativos]);
+
+  // Busca automaticamente o preço unitário atual ao selecionar um ativo
+  useEffect(() => {
+    if (!modalAberto || !ativoSelecionadoObj?.ticker) return;
 
     let cancelado = false;
 
@@ -161,7 +208,7 @@ export default function TransacoesPage() {
         setAvisoCotacao("");
 
         const res = await fetch(
-          `/api/cotacao?ticker=${encodeURIComponent(ativoSelecionado!.ticker)}`,
+          `/api/cotacao?ticker=${encodeURIComponent(ativoSelecionadoObj!.ticker)}`,
           { cache: "no-store" },
         );
 
@@ -178,7 +225,7 @@ export default function TransacoesPage() {
         if (typeof dados.precoAtual === "number" && dados.precoAtual > 0) {
           setPrecoUnitario(String(dados.precoAtual));
           setAvisoCotacao(
-            `Cotação atual de ${ativoSelecionado!.ticker} preenchida automaticamente.`,
+            `Cotação atual de ${ativoSelecionadoObj!.ticker} preenchida automaticamente.`,
           );
         } else {
           setAvisoCotacao(
@@ -203,11 +250,61 @@ export default function TransacoesPage() {
     return () => {
       cancelado = true;
     };
-  }, [modalAberto, ativoId, ativos]);
+  }, [modalAberto, ativoSelecionadoObj]);
+
+  async function handleSelecionarAtivo(item: Ativo) {
+    setDropdownAtivoAberto(false);
+    setTermoBuscaAtivo(`${item.ticker} — ${item.nome}`);
+    setErroModal("");
+
+    // Se o ativo já existe no banco (tem ID), apenas seleciona
+    if (item.id) {
+      setAtivoId(item.id);
+      setAtivoSelecionadoObj(item);
+      return;
+    }
+
+    // Se veio da Brapi (id === null), cadastra automaticamente no Supabase
+    try {
+      setBuscandoCotacao(true);
+      const res = await fetch("/api/ativos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ticker: item.ticker,
+          nome: item.nome,
+          tipo_ativo: item.tipo_ativo || item.tipo || "ACAO",
+          setor: item.setor || null,
+          bolsa: item.bolsa || "B3",
+          logo_url: item.logo_url || null,
+        }),
+      });
+
+      const criado = await res.json();
+      if (!res.ok || !criado?.id) {
+        setErroModal(
+          criado?.erro || `Não foi possível habilitar o ativo ${item.ticker}.`,
+        );
+        return;
+      }
+
+      setAtivoId(criado.id);
+      setAtivoSelecionadoObj(criado);
+      setAtivos((prev) =>
+        prev.some((a) => a.id === criado.id) ? prev : [...prev, criado],
+      );
+    } catch {
+      setErroModal("Erro ao importar ativo da B3.");
+    } finally {
+      setBuscandoCotacao(false);
+    }
+  }
 
   const mapaAtivos = useMemo(() => {
     const mapa = new Map<string, Ativo>();
-    ativos.forEach((ativo) => mapa.set(ativo.id, ativo));
+    ativos.forEach((ativo) => {
+      if (ativo.id) mapa.set(ativo.id, ativo);
+    });
     return mapa;
   }, [ativos]);
 
@@ -256,6 +353,12 @@ export default function TransacoesPage() {
   async function handleCriarTransacao(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErroModal("");
+
+    if (!ativoId) {
+      setErroModal("Selecione um ativo válido da lista antes de registrar.");
+      return;
+    }
+
     setSalvando(true);
 
     try {
@@ -312,11 +415,15 @@ export default function TransacoesPage() {
           onClick={() => {
             setErroModal("");
             setAvisoCotacao("");
+            setDropdownAtivoAberto(false);
+            setResultadosBuscaAtivo(ativos);
             if (!dataOperacao) {
               setDataOperacao(new Date().toISOString().split("T")[0]);
             }
-            if (!ativoId && ativos.length > 0) {
+            if (!ativoId && ativos.length > 0 && ativos[0].id) {
               setAtivoId(ativos[0].id);
+              setAtivoSelecionadoObj(ativos[0]);
+              setTermoBuscaAtivo(`${ativos[0].ticker} — ${ativos[0].nome}`);
             }
             setModalAberto(true);
           }}
@@ -627,25 +734,90 @@ export default function TransacoesPage() {
                 </select>
               </div>
 
-              <div>
+              {/* Busca Dinâmica de Ativo na B3 */}
+              <div className="relative">
                 <label className="mb-1 block text-xs font-semibold text-slate-600">
-                  Ativo
+                  Ativo (digite ticker ou nome da B3)
                 </label>
-                <select
-                  value={ativoId}
-                  onChange={(e) => setAtivoId(e.target.value)}
-                  required
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:bg-white"
-                >
-                  <option value="" disabled>
-                    Selecione um ativo
-                  </option>
-                  {ativos.map((ativo) => (
-                    <option key={ativo.id} value={ativo.id}>
-                      {ativo.ticker} — {ativo.nome}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Ex: BBAS3, ITSA4, KNRI11, BOVA11..."
+                    value={termoBuscaAtivo}
+                    onFocus={() => setDropdownAtivoAberto(true)}
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      setTermoBuscaAtivo(valor);
+                      setAtivoId("");
+                      if (!valor.trim()) {
+                        setResultadosBuscaAtivo(ativos);
+                      }
+                      setDropdownAtivoAberto(true);
+                    }}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-8 text-sm text-slate-900 outline-none focus:border-emerald-500 focus:bg-white"
+                  />
+                  {termoBuscaAtivo && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTermoBuscaAtivo("");
+                        setAtivoId("");
+                        setAtivoSelecionadoObj(null);
+                        setResultadosBuscaAtivo(ativos);
+                        setDropdownAtivoAberto(true);
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {dropdownAtivoAberto && (
+                  <div className="absolute z-20 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                    {buscandoAtivosB3 ? (
+                      <div className="p-3 text-xs text-slate-500">
+                        Pesquisando ativos na B3...
+                      </div>
+                    ) : resultadosBuscaAtivo.length === 0 ? (
+                      <div className="p-3 text-xs text-slate-500">
+                        Nenhum ativo encontrado para &quot;{termoBuscaAtivo}&quot;.
+                      </div>
+                    ) : (
+                      resultadosBuscaAtivo.map((item, idx) => (
+                        <button
+                          key={item.id || `${item.ticker}-${idx}`}
+                          type="button"
+                          onClick={() => handleSelecionarAtivo(item)}
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-slate-50"
+                        >
+                          <div>
+                            <span className="font-bold text-slate-900">
+                              {item.ticker}
+                            </span>{" "}
+                            <span className="text-xs text-slate-500">
+                              — {item.nome}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {item.origem === "BRAPI" && !item.id && (
+                              <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                B3
+                              </span>
+                            )}
+                            {ativoId && ativoId === item.id && (
+                              <Check size={14} className="text-emerald-600" />
+                            )}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -735,7 +907,7 @@ export default function TransacoesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={salvando}
+                  disabled={salvando || !ativoId}
                   className="cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 disabled:opacity-50"
                 >
                   {salvando ? "Salvando..." : "Registrar"}
