@@ -16,6 +16,12 @@ jobs:
     defaults:
       run:
         working-directory: carteira-investimentos
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      BRAPI_KEY: ${{ secrets.BRAPI_KEY }}
     steps:
       - uses: actions/checkout@v4
 
