@@ -37,38 +37,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const consultas = await Promise.all(
-      tickers.map(async (simbolo) => {
-        try {
-          const url = `https://brapi.dev/api/quote/${encodeURIComponent(simbolo)}`;
-          const res = await fetch(url, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            cache: "no-store",
-          });
+    const results = [];
 
-          if (!res.ok) {
-            const corpo = await res.text().catch(() => "");
-            console.error(
-              `Brapi falhou para ${simbolo} (HTTP ${res.status}):`,
-              corpo,
-            );
-            return null;
-          }
+    for (const simbolo of tickers) {
+      try {
+        const url = `https://brapi.dev/api/quote/${encodeURIComponent(simbolo)}`;
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        });
 
-          const json = await res.json();
-          const ativo = Array.isArray(json?.results) ? json.results[0] : null;
-          return ativo ?? null;
-        } catch (errAtivo) {
-          if (isNextPrerenderError(errAtivo)) throw errAtivo;
-          console.error(`Erro de rede ao consultar ${simbolo}:`, errAtivo);
-          return null;
+        if (!res.ok) {
+          const corpo = await res.text().catch(() => "");
+          console.error(
+            `Brapi falhou para ${simbolo} (HTTP ${res.status}):`,
+            corpo,
+          );
+          continue;
         }
-      }),
-    );
 
-    const results = consultas.filter(Boolean);
+        const json = await res.json();
+        const ativo = Array.isArray(json?.results) ? json.results[0] : null;
+        if (ativo) {
+          results.push(ativo);
+        }
+      } catch (errAtivo) {
+        if (isNextPrerenderError(errAtivo)) throw errAtivo;
+        console.error(`Erro de rede ao consultar ${simbolo}:`, errAtivo);
+      }
+    }
 
     if (results.length === 0) {
       return NextResponse.json(
