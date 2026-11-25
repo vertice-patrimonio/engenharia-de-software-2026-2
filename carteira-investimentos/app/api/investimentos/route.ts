@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { obterSessaoAtual } from "@/lib/sessao";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
-async function resolverCarteiraId(usuarioId: string, carteiraIdSessao: string | null) {
+async function resolverCarteiraId(
+  usuarioId: string,
+  carteiraIdSessao: string | null,
+) {
   const supabaseAdmin = getSupabaseAdmin();
 
   if (carteiraIdSessao) {
@@ -50,7 +53,9 @@ export async function GET() {
     const supabaseAdmin = getSupabaseAdmin();
     const { data, error } = await supabaseAdmin
       .from("investimentos")
-      .select("id, carteira_id, ativo_id, quantidade, valor_investido, atualizado_em")
+      .select(
+        "id, carteira_id, ativo_id, quantidade, valor_investido, atualizado_em",
+      )
       .eq("carteira_id", carteiraId)
       .gt("quantidade", 0)
       .order("valor_investido", { ascending: false });

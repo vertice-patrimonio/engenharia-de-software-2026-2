@@ -94,7 +94,9 @@ export default function PerfilPage() {
 
       <section className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
         {carregando ? (
-          <p className="text-sm text-slate-500">Carregando dados do perfil...</p>
+          <p className="text-sm text-slate-500">
+            Carregando dados do perfil...
+          </p>
         ) : (
           <form onSubmit={handleSalvar} className="space-y-4">
             {mensagem && (

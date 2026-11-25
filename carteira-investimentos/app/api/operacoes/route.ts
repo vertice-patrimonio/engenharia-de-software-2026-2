@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { obterSessaoAtual } from "@/lib/sessao";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
-async function resolverCarteiraId(usuarioId: string, carteiraIdSessao: string | null) {
+async function resolverCarteiraId(
+  usuarioId: string,
+  carteiraIdSessao: string | null,
+) {
   const supabaseAdmin = getSupabaseAdmin();
 
   if (carteiraIdSessao) {
@@ -89,7 +92,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const ativoId = String(body.ativoId || body.ativo_id || "").trim();
-    const tipo = String(body.tipo || "").toUpperCase().trim();
+    const tipo = String(body.tipo || "")
+      .toUpperCase()
+      .trim();
     const quantidade = Number(body.quantidade);
     const precoUnitario = Number(body.precoUnitario ?? body.preco_unitario);
     const taxas = Number(body.taxas || 0);
@@ -194,7 +199,10 @@ export async function POST(request: NextRequest) {
         );
 
       if (erroUpsertInv) {
-        console.error("Erro ao atualizar investimentos na compra:", erroUpsertInv);
+        console.error(
+          "Erro ao atualizar investimentos na compra:",
+          erroUpsertInv,
+        );
       }
     } else {
       const novaQtd = qtdAtual - quantidade;

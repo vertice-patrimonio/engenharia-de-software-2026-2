@@ -133,7 +133,9 @@ export default function MinhaCarteiraPage() {
           ? dadosInv
           : dadosInv.investimentos || [];
 
-        setInvestimentos(listaInv.filter((item) => Number(item.quantidade) > 0));
+        setInvestimentos(
+          listaInv.filter((item) => Number(item.quantidade) > 0),
+        );
 
         if (resAtivos.ok) {
           const dadosAtivos = await resAtivos.json();
@@ -362,13 +364,19 @@ export default function MinhaCarteiraPage() {
               <tbody className="divide-y divide-slate-100 text-sm">
                 {carregando ? (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-slate-400">
+                    <td
+                      colSpan={5}
+                      className="py-10 text-center text-slate-400"
+                    >
                       Carregando posições...
                     </td>
                   </tr>
                 ) : posicoes.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-slate-500">
+                    <td
+                      colSpan={5}
+                      className="py-10 text-center text-slate-500"
+                    >
                       Nenhum ativo em custódia no momento.
                     </td>
                   </tr>

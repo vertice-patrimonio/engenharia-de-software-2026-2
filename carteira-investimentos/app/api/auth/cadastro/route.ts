@@ -78,7 +78,9 @@ export async function POST(request: NextRequest) {
     if (erroUsuario || !novoUsuario) {
       console.error("Erro ao criar usuário:", erroUsuario);
       return NextResponse.json(
-        { erro: erroUsuario?.message || "Não foi possível cadastrar o usuário." },
+        {
+          erro: erroUsuario?.message || "Não foi possível cadastrar o usuário.",
+        },
         { status: 400 },
       );
     }

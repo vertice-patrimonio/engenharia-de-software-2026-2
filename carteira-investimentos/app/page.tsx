@@ -56,7 +56,10 @@ export default function HomeAuthPage() {
         localStorage.setItem("vertice_usuario", JSON.stringify(dados.usuario));
       }
       if (dados.carteira) {
-        localStorage.setItem("vertice_carteira", JSON.stringify(dados.carteira));
+        localStorage.setItem(
+          "vertice_carteira",
+          JSON.stringify(dados.carteira),
+        );
       }
 
       router.push("/dashboard");
@@ -86,8 +89,8 @@ export default function HomeAuthPage() {
             Acompanhe sua carteira e patrimônio em um só lugar.
           </h2>
           <p className="text-sm text-slate-400">
-            Ao criar sua conta, sua carteira inicial é preparada
-            automaticamente para você registrar aportes e acompanhar posições.
+            Ao criar sua conta, sua carteira inicial é preparada automaticamente
+            para você registrar aportes e acompanhar posições.
           </p>
         </div>
 

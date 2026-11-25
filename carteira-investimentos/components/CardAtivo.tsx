@@ -61,10 +61,7 @@ export default function CardAtivo({ ativo }: { ativo: AtivoProps }) {
           <h2 className="text-xl font-bold text-slate-900 tracking-wide">
             {symbol}
           </h2>
-          <p
-            className="text-sm text-slate-500 truncate"
-            title={nomeDaEmpresa}
-          >
+          <p className="text-sm text-slate-500 truncate" title={nomeDaEmpresa}>
             {nomeDaEmpresa}
           </p>
         </div>
@@ -83,8 +80,7 @@ export default function CardAtivo({ ativo }: { ativo: AtivoProps }) {
           <IconeVariacao size={16} />
           <span>
             {isPositivo ? "+" : ""}
-            {formatarMoeda(info.regularMarketChange)}{" "}
-            ({isPositivo ? "+" : ""}
+            {formatarMoeda(info.regularMarketChange)} ({isPositivo ? "+" : ""}
             {(info.regularMarketChangePercent || 0).toFixed(2)}%)
           </span>
         </div>
