@@ -16,6 +16,12 @@ jobs:
     defaults:
       run:
         working-directory: carteira-investimentos
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      BRAPI_KEY: ${{ secrets.BRAPI_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -49,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Merge automático após testes passarem
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --squash "$PR_URL" || gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
