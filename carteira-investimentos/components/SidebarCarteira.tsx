@@ -1,83 +1,127 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, ArrowLeftRight, User, LogOut } from "lucide-react";
+import {
+  Home,
+  Wallet,
+  ArrowLeftRight,
+  User,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 
-interface SidebarCarteiraProps {
-  onLogout?: () => void;
-}
-
-const MENU_ITEMS = [
-  { label: "Página Inicial", href: "/dashboard", icon: Home },
-  { label: "Minha Carteira", href: "/carteira", icon: Wallet },
-  { label: "Transações", href: "/transacoes", icon: ArrowLeftRight },
-  { label: "Meu Perfil", href: "/perfil", icon: User },
+const ITENS_MENU = [
+  { href: "/dashboard", label: "Página Inicial", icone: Home },
+  { href: "/carteira", label: "Minha Carteira", icone: Wallet },
+  { href: "/transacoes", label: "Transações", icone: ArrowLeftRight },
+  { href: "/perfil", label: "Meu Perfil", icone: User },
 ];
 
-export default function SidebarCarteira({ onLogout }: SidebarCarteiraProps) {
+export default function SidebarCarteira() {
   const pathname = usePathname();
+  const [recolhida, setRecolhida] = useState(false);
+  const [saindo, setSaindo] = useState(false);
+
+  async function handleSair() {
+    if (saindo) return;
+    setSaindo(true);
+
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+      });
+    } finally {
+      window.location.assign("/");
+    }
+  }
 
   return (
-    <aside className="w-60 shrink-0 bg-[#060913] text-slate-400 min-h-screen flex flex-col justify-between px-3.5 py-6 select-none">
+    <aside
+      className={`flex shrink-0 flex-col justify-between bg-[#070B14] py-6 text-slate-300 transition-all duration-200 ${
+        recolhida ? "w-20 px-2.5" : "w-64 px-4"
+      }`}
+    >
       <div>
-        <div className="flex items-center gap-3 px-2.5 mb-8">
-          <div className="w-8 h-8 rounded-lg bg-[#10b981] flex items-center justify-center text-[#060913] font-bold text-sm">
-            V
+        {/* Topo com marca e botão de recuar/expandir ao lado */}
+        <div
+          className={`mb-8 flex items-center ${
+            recolhida ? "flex-col gap-3" : "justify-between px-2"
+          }`}
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500 font-bold text-slate-950">
+              V
+            </div>
+            {!recolhida && (
+              <span className="truncate text-base font-bold tracking-wider text-white">
+                VÉRTICE
+              </span>
+            )}
           </div>
-          <span className="text-white font-bold tracking-[0.14em] text-sm uppercase">
-            VÉRTICE
-          </span>
+
+          <button
+            type="button"
+            onClick={() => setRecolhida((prev) => !prev)}
+            title={recolhida ? "Expandir menu" : "Recolher menu"}
+            aria-label={recolhida ? "Expandir menu" : "Recolher menu"}
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-slate-800 bg-slate-900/80 text-slate-400 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white"
+          >
+            {recolhida ? (
+              <PanelLeftOpen size={16} />
+            ) : (
+              <PanelLeftClose size={16} />
+            )}
+          </button>
         </div>
 
-        <nav className="space-y-1.5" aria-label="Navegação principal">
-          {MENU_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive =
+        {/* Links de navegação */}
+        <nav className="space-y-1.5">
+          {ITENS_MENU.map((item) => {
+            const Icone = item.icone;
+            const ativo =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[14px] font-medium transition-all ${
-                  isActive
-                    ? "bg-[#111827] text-[#10b981] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
+                title={recolhida ? item.label : undefined}
+                className={`flex items-center rounded-xl py-2.5 text-sm font-medium transition ${
+                  recolhida ? "justify-center px-2" : "gap-3 px-3.5"
+                } ${
+                  ativo
+                    ? "bg-slate-800/80 text-emerald-400"
+                    : "text-slate-400 hover:bg-slate-800/40 hover:text-white"
                 }`}
               >
-                <Icon
-                  size={18}
-                  strokeWidth={2}
-                  className={isActive ? "text-[#10b981]" : "text-slate-400"}
-                />
-                <span>{item.label}</span>
+                <Icone size={18} className="shrink-0" />
+                {!recolhida && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
         </nav>
       </div>
 
-      <div className="pt-6">
-        {onLogout ? (
-          <button
-            type="button"
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[14px] font-medium text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-          >
-            <LogOut size={18} strokeWidth={2} className="text-rose-500" />
-            <span>Sair da conta</span>
-          </button>
-        ) : (
-          <Link
-            href="/"
-            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[14px] font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
-          >
-            <LogOut size={18} strokeWidth={2} className="text-rose-500" />
-            <span>Sair da conta</span>
-          </Link>
+      {/* Botão Sair */}
+      <button
+        type="button"
+        onClick={handleSair}
+        disabled={saindo}
+        title={recolhida ? "Sair" : undefined}
+        className={`flex w-full cursor-pointer items-center rounded-xl py-2.5 text-sm font-medium text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-400 disabled:opacity-50 ${
+          recolhida ? "justify-center px-2" : "gap-3 px-3.5"
+        }`}
+      >
+        <LogOut size={18} className="shrink-0" />
+        {!recolhida && (
+          <span className="truncate">{saindo ? "Saindo..." : "Sair"}</span>
         )}
-      </div>
+      </button>
     </aside>
   );
 }

@@ -52,9 +52,9 @@ export default function DashboardHome() {
     async function carregarDashboard() {
       try {
         const [resUsuario, resInvestimentos, resAtivos] = await Promise.all([
-          fetch("/api/usuarios"),
-          fetch("/api/investimentos"),
-          fetch("/api/ativos"),
+          fetch("/api/usuarios", { cache: "no-store" }),
+          fetch("/api/investimentos", { cache: "no-store" }),
+          fetch("/api/ativos", { cache: "no-store" }),
         ]);
 
         if (resUsuario.ok) {
@@ -86,6 +86,13 @@ export default function DashboardHome() {
     ativos.forEach((ativo) => mapa.set(ativo.id, ativo));
     return mapa;
   }, [ativos]);
+
+  const tickersDaCarteira = useMemo(() => {
+    return investimentos
+      .filter((inv) => Number(inv.quantidade || 0) > 0)
+      .map((inv) => mapaAtivos.get(inv.ativo_id)?.ticker)
+      .filter((ticker): ticker is string => Boolean(ticker));
+  }, [investimentos, mapaAtivos]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -140,12 +147,9 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Acompanhamento de Mercado */}
+      {/* Acompanhamento de Mercado em slide horizontal automático (4s) */}
       <section className="mt-8">
-        <h2 className="text-xl font-semibold text-slate-900 mb-4">
-          Acompanhamento de Mercado
-        </h2>
-        <PainelAtivos />
+        <PainelAtivos tickersExtras={tickersDaCarteira} />
       </section>
 
       {/* Tabela de Investimentos */}
